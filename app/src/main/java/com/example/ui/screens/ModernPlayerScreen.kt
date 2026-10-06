@@ -121,6 +121,7 @@ import kotlin.math.abs
 fun ModernPlayerScreen(
     video: VideoItem,
     upNextVideos: List<VideoItem>,
+    shortsList: List<VideoItem> = emptyList(),
     onClose: () -> Unit,
     onEditTitleClick: () -> Unit,
     onToggleLike: () -> Unit,
@@ -130,6 +131,7 @@ fun ModernPlayerScreen(
     onOpenComments: () -> Unit,
     onShare: () -> Unit,
     onSelectUpNext: (VideoItem) -> Unit,
+    onShortClick: ((VideoItem) -> Unit)? = null,
     onProgressUpdate: (Long) -> Unit,
     onMinimize: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -1131,7 +1133,154 @@ fun ModernPlayerScreen(
                     }
                 }
 
-                // "Up Next" Header
+                // 4. SHORTS FEED CAROUSEL (Horizontal Scroll with 9:16 vertical cards)
+                val effectiveShorts = if (shortsList.isNotEmpty()) shortsList else upNextVideos.filter { it.isShort }
+                if (effectiveShorts.isNotEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            // Header with Red Shorts Icon Badge + Title
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(YtRed),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("⚡", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Shorts",
+                                    color = YtTextPrimary,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Horizontal scrollable carousel with 9:16 vertical cards
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                effectiveShorts.take(6).forEach { shortItem ->
+                                    Box(
+                                        modifier = Modifier
+                                            .width(130.dp)
+                                            .aspectRatio(9f / 16f)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(YtSurfaceDark)
+                                            .clickable {
+                                                if (onShortClick != null) onShortClick(shortItem) else onSelectUpNext(shortItem)
+                                            }
+                                    ) {
+                                        VideoThumbnailView(
+                                            video = shortItem,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+
+                                        // Dark gradient bottom overlay scrim
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                                                        listOf(Color.Transparent, Color(0x33000000), Color(0xEE000000))
+                                                    )
+                                                )
+                                        )
+
+                                        // 3-dots menu button in top right corner
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(6.dp)
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0x66000000)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "Options",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+
+                                        // Title and Views Overlay on bottom
+                                        Column(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomStart)
+                                                .padding(8.dp)
+                                        ) {
+                                            Text(
+                                                text = shortItem.displayTitle,
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = shortItem.viewsCount,
+                                                color = Color(0xCCFFFFFF),
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 5. CATEGORY FILTER CHIPS ROW (Directly below Shorts Carousel)
+                item {
+                    val filterChips = listOf("All", "From channel", "Comedy", "Related")
+                    var selectedChip by remember { mutableStateOf("All") }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        filterChips.forEach { chip ->
+                            val isSelected = selectedChip == chip
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) YtTextPrimary else YtSurfaceVariant)
+                                    .clickable { selectedChip = chip }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = chip,
+                                    color = if (isSelected) Color.Black else YtTextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 6. "Up Next" Header
                 item {
                     Text(
                         text = "Up Next",

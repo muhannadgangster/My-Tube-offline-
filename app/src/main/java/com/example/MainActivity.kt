@@ -240,6 +240,7 @@ fun MyTubeApp(
             ModernPlayerScreen(
                 video = currentlyPlaying!!,
                 upNextVideos = allVideos,
+                shortsList = shortsVideos,
                 onClose = { viewModel.closePlayer() },
                 onMinimize = { viewModel.minimizePlayer() },
                 onEditTitleClick = { viewModel.openRenameDialog(currentlyPlaying!!) },
@@ -256,6 +257,7 @@ fun MyTubeApp(
                 onOpenComments = { viewModel.openComments(currentlyPlaying!!) },
                 onShare = { shareVideo(currentlyPlaying!!) },
                 onSelectUpNext = { nextVideo -> viewModel.playVideo(nextVideo) },
+                onShortClick = { shortVideo -> viewModel.openShortsAt(shortVideo) },
                 onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
                 modifier = Modifier.fillMaxSize()
             )

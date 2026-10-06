@@ -243,6 +243,22 @@ fun SettingsScreen(
                 )
             }
 
+            val isLiquidGlassOn = uiTheme.contains("Liquid Glass")
+            item {
+                SettingsSwitchRow(
+                    title = "Liquid Glass UI Mode",
+                    subtitle = if (isLiquidGlassOn) "Liquid Glass frosted effect & reflective highlights (Active)" else "Standard YouTube flat theme (Off)",
+                    checked = isLiquidGlassOn,
+                    onCheckedChange = { isEnabled ->
+                        if (isEnabled) {
+                            settingsManager.setUiTheme("Liquid Glass with Reflection")
+                        } else {
+                            settingsManager.setUiTheme("Dark Mode")
+                        }
+                    }
+                )
+            }
+
             item {
                 SettingsClickableRow(
                     title = "UI Theme",
