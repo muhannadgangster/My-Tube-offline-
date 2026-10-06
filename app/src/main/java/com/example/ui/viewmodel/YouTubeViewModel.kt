@@ -267,6 +267,7 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
         _currentlyPlaying.value = video
         _isPlayerMinimized.value = false
         _isPlaybackPaused.value = false
+        _isSearchActive.value = false
         if (!settingsManager.pauseHistory.value) {
             viewModelScope.launch {
                 repository.recordWatchProgress(video.id, video.watchPositionMs.coerceAtLeast(1000L))

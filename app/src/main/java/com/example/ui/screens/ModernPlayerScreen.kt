@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -182,6 +183,27 @@ fun ModernPlayerScreen(
         }
     }
 
+    val listState = rememberLazyListState()
+
+    // Deduplicated recommendations without the currently playing video
+    val uniqueUpNext = remember(upNextVideos, video.id) {
+        upNextVideos
+            .filter { it.id != video.id }
+            .distinctBy { it.id }
+    }
+
+    // Auto-reset playback states and scroll to top when a new video is clicked (from Up Next or Search)
+    LaunchedEffect(video.id) {
+        currentPositionMs = video.watchPositionMs
+        totalDurationMs = video.durationMs.coerceAtLeast(60000L)
+        isPlaying = true
+        showControls = true
+        playbackSpeed = 1.0f
+        try {
+            listState.scrollToItem(0)
+        } catch (_: Exception) {}
+    }
+
     // Timer to update current position
     LaunchedEffect(isPlaying, video.id) {
         while (true) {
@@ -263,10 +285,11 @@ fun ModernPlayerScreen(
                 }
                 .testTag("modern_video_player_box")
         ) {
-            // AndroidView wrapping native VideoView
+            // AndroidView wrapping native VideoView with dynamic video reloading on click
             AndroidView(
                 factory = { ctx ->
                     VideoView(ctx).apply {
+                        tag = video.id
                         try {
                             setOnErrorListener { _, _, _ -> true }
                             if (!video.id.startsWith("sample_")) {
@@ -288,6 +311,18 @@ fun ModernPlayerScreen(
                 },
                 update = { vv ->
                     videoViewRef = vv
+                    // When video changes, stop current playback and load new video source
+                    val currentTag = vv.tag as? String
+                    if (currentTag != video.id) {
+                        vv.tag = video.id
+                        try {
+                            vv.stopPlayback()
+                            mediaPlayerRef = null
+                            if (!video.id.startsWith("sample_")) {
+                                vv.setVideoURI(Uri.parse(video.uriString))
+                            }
+                        } catch (_: Exception) {}
+                    }
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -727,6 +762,7 @@ fun ModernPlayerScreen(
         // When fullscreen, don't show the bottom scroll content
         if (!isFullscreen) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag("player_details_column"),
@@ -1040,7 +1076,7 @@ fun ModernPlayerScreen(
                 }
 
                 // Up Next Recommendations List
-                items(upNextVideos.filter { it.id != video.id }, key = { it.id }) { nextVideo ->
+                items(uniqueUpNext, key = { it.id }) { nextVideo ->
                     UpNextVideoCard(
                         video = nextVideo,
                         onClick = { onSelectUpNext(nextVideo) }

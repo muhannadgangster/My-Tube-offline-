@@ -225,6 +225,7 @@ fun MyTubeApp(
                 onRemoveHistoryItem = { viewModel.removeSearchQuery(it) },
                 onClearHistory = { viewModel.clearSearchHistory() },
                 onVideoClick = { video ->
+                    viewModel.setSearchActive(false)
                     viewModel.playVideo(video)
                 },
                 onBack = {
