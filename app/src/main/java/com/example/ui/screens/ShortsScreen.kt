@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.widget.VideoView
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -18,6 +20,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +42,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -56,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +70,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -82,6 +88,7 @@ import com.example.ui.theme.YtRed
 import com.example.util.ScalingUtils
 import com.example.util.scaled
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Standard YouTube Shorts Layout:
@@ -184,9 +191,12 @@ private fun ShortsItemPage(
     onEditTitle: () -> Unit,
     onShare: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var isPlaying by remember { mutableStateOf(true) }
     var showPauseOverlay by remember { mutableStateOf(false) }
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
+    var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isSpeedBoosting by remember { mutableStateOf(false) }
 
     // Spinning disc animation for sound card
     val infiniteTransition = rememberInfiniteTransition(label = "disc_rotation")
@@ -204,19 +214,50 @@ private fun ShortsItemPage(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                isPlaying = !isPlaying
-                if (!video.isPhotoSlideshow) {
-                    if (isPlaying) {
-                        videoViewRef?.start()
-                    } else {
-                        videoViewRef?.pause()
+            .pointerInput(isActive) {
+                detectTapGestures(
+                    onPress = {
+                        var isLongPressed = false
+                        val pressJob = coroutineScope.launch {
+                            delay(300)
+                            isLongPressed = true
+                            isSpeedBoosting = true
+                            try {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                    val params = mediaPlayerRef?.playbackParams ?: android.media.PlaybackParams()
+                                    params.speed = 2.0f
+                                    mediaPlayerRef?.playbackParams = params
+                                }
+                            } catch (_: Exception) {}
+                        }
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            pressJob.cancel()
+                            if (isLongPressed) {
+                                isSpeedBoosting = false
+                                try {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                        val params = mediaPlayerRef?.playbackParams ?: android.media.PlaybackParams()
+                                        params.speed = 1.0f
+                                        mediaPlayerRef?.playbackParams = params
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    },
+                    onTap = {
+                        isPlaying = !isPlaying
+                        if (!video.isPhotoSlideshow) {
+                            if (isPlaying) {
+                                videoViewRef?.start()
+                            } else {
+                                videoViewRef?.pause()
+                            }
+                        }
+                        showPauseOverlay = true
                     }
-                }
-                showPauseOverlay = true
+                )
             }
     ) {
         if (video.isPhotoSlideshow) {
@@ -238,6 +279,7 @@ private fun ShortsItemPage(
                                 setVideoURI(Uri.parse(video.uriString))
                             }
                             setOnPreparedListener { mp ->
+                                mediaPlayerRef = mp
                                 mp.isLooping = (video.clipEndMs <= 0 || video.clipEndMs >= video.durationMs)
                                 if (video.clipStartMs > 0) {
                                     seekTo(video.clipStartMs.toInt())
@@ -285,6 +327,43 @@ private fun ShortsItemPage(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+            }
+        }
+
+        // Long Press 2x Speed Gesture Top Overlay Indicator
+        AnimatedVisibility(
+            visible = isSpeedBoosting,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xD9000000))
+                    .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                    .testTag("shorts_2x_speed_indicator"),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.FastForward,
+                        contentDescription = null,
+                        tint = YtRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "2x Speed",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 

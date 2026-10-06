@@ -148,6 +148,7 @@ fun ModernPlayerScreen(
     var speedFeedbackText by remember { mutableStateOf<String?>(null) }
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
     var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isSpeedBoosting by remember { mutableStateOf(false) }
 
     val onSpeedSelected: (Float) -> Unit = { speed ->
         playbackSpeed = speed
@@ -251,8 +252,38 @@ fun ModernPlayerScreen(
                         .aspectRatio(16f / 9f)
                 )
                 .background(Color.Black)
-                .pointerInput(Unit) {
+                .pointerInput(playbackSpeed) {
                     detectTapGestures(
+                        onPress = {
+                            var isLongPressed = false
+                            val pressJob = coroutineScope.launch {
+                                delay(300)
+                                isLongPressed = true
+                                isSpeedBoosting = true
+                                try {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                        val params = mediaPlayerRef?.playbackParams ?: android.media.PlaybackParams()
+                                        params.speed = 2.0f
+                                        mediaPlayerRef?.playbackParams = params
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                pressJob.cancel()
+                                if (isLongPressed) {
+                                    isSpeedBoosting = false
+                                    try {
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                            val params = mediaPlayerRef?.playbackParams ?: android.media.PlaybackParams()
+                                            params.speed = playbackSpeed
+                                            mediaPlayerRef?.playbackParams = params
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        },
                         onTap = {
                             showControls = !showControls
                         },
@@ -362,6 +393,42 @@ fun ModernPlayerScreen(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+
+            // Long Press 2x Speed Gesture Top Overlay Indicator
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isSpeedBoosting,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 18.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xD9000000))
+                        .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                        .testTag("player_2x_speed_indicator"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.FastForward,
+                            contentDescription = null,
+                            tint = YtRed,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "2x Speed",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 

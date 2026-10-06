@@ -46,6 +46,7 @@ import com.example.ui.components.NotificationsSheet
 import com.example.ui.components.PlusModalSheet
 import com.example.ui.components.RenameTitleDialog
 import com.example.ui.components.YouTubeBottomBar
+import com.example.ui.components.YouTubeSplashScreen
 import com.example.ui.components.YouTubeTopBar
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LibraryScreen
@@ -122,6 +123,7 @@ fun MyTubeApp(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     var showCreateClipDialog by remember { mutableStateOf(false) }
+    var showSplashScreen by remember { mutableStateOf(true) }
 
     // Runtime Permission Request on App Launch (Handles both Videos & Images)
     val permissionsToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -513,6 +515,13 @@ fun MyTubeApp(
                         snackbarHostState.showSnackbar("Profile updated offline")
                     }
                 }
+            )
+        }
+
+        // Native YouTube-style Intro Splash Screen Overlay
+        if (showSplashScreen) {
+            YouTubeSplashScreen(
+                onAnimationComplete = { showSplashScreen = false }
             )
         }
     }
