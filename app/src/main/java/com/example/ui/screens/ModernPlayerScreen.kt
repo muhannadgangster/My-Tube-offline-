@@ -41,8 +41,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
@@ -59,10 +61,12 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.DropdownMenu
@@ -70,6 +74,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -237,6 +243,17 @@ fun ModernPlayerScreen(
             showControls = false
         }
     }
+
+    // Offline Comments (Local Storage / Preferences / State)
+    val sharedPrefs = remember(context) {
+        context.getSharedPreferences("offline_yt_comments", android.content.Context.MODE_PRIVATE)
+    }
+    var localCommentsList by remember(video.id) {
+        val savedSet = sharedPrefs.getStringSet("comments_${video.id}", null) ?: emptySet()
+        val defaultList = if (video.userNotes.isNotBlank()) listOf(video.userNotes) else listOf("Vote for moni di bf face reveal 💖", "Amazing offline playback! 🔥")
+        mutableStateOf((defaultList + savedSet.toList()).distinct())
+    }
+    var commentInputText by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -446,13 +463,14 @@ fun ModernPlayerScreen(
                         .fillMaxSize()
                         .background(Color(0x77000000))
                 ) {
-                    // Top Player Bar
+                    // Top Player Bar (Official YouTube mobile style)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Top-left: Collapse arrow (v)
                         IconButton(
                             onClick = {
                                 onProgressUpdate(currentPositionMs)
@@ -462,98 +480,110 @@ fun ModernPlayerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Minimize player to floating PiP",
+                                contentDescription = "Collapse video player",
                                 tint = Color.White
                             )
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Lock Button
+                        // Top-right: Cast icon
                         IconButton(
-                            onClick = { isLocked = !isLocked },
-                            modifier = Modifier.testTag("player_lock_button")
+                            onClick = {
+                                speedFeedbackText = "Connecting Cast..."
+                            },
+                            modifier = Modifier.testTag("player_cast_button")
                         ) {
                             Icon(
-                                imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                                contentDescription = "Lock controls",
-                                tint = if (isLocked) YtRed else Color.White
+                                imageVector = Icons.Default.Cast,
+                                contentDescription = "Cast",
+                                tint = Color.White
                             )
                         }
 
-                        // Speed Button Pill
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(if (playbackSpeed != 1.0f) YtRed else Color(0x66000000))
-                                .clickable { showSpeedOverlay = true }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .testTag("player_speed_pill_button"),
-                            verticalAlignment = Alignment.CenterVertically
+                        // Top-right: CC icon
+                        IconButton(
+                            onClick = {
+                                speedFeedbackText = "Captions (CC) toggled"
+                            },
+                            modifier = Modifier.testTag("player_cc_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Speed,
-                                contentDescription = "Playback speed",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = when (playbackSpeed) {
-                                    0.5f -> "0.5x"
-                                    1.0f -> "1x"
-                                    1.5f -> "1.5x"
-                                    2.0f -> "2x"
-                                    3.0f -> "3x"
-                                    else -> "${playbackSpeed}x"
-                                },
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                imageVector = Icons.Default.ClosedCaption,
+                                contentDescription = "Subtitles/CC",
+                                tint = Color.White
                             )
                         }
 
-                        // Fullscreen Toggle
+                        // Top-right: Settings gear (⚙️)
                         IconButton(
-                            onClick = { isFullscreen = !isFullscreen },
-                            modifier = Modifier.testTag("player_fullscreen_button")
+                            onClick = {
+                                showSpeedOverlay = true
+                            },
+                            modifier = Modifier.testTag("player_settings_button")
                         ) {
                             Icon(
-                                imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                                contentDescription = "Fullscreen",
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = Color.White
+                            )
+                        }
+
+                        // Top-right: Close button (✕)
+                        IconButton(
+                            onClick = {
+                                onProgressUpdate(currentPositionMs)
+                                onClose()
+                            },
+                            modifier = Modifier.testTag("player_close_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close player",
                                 tint = Color.White
                             )
                         }
                     }
 
                     if (!isLocked) {
-                        // Center Play / Pause and 10s Skip Buttons
+                        // Center Play / Pause and Rewind/Forward (-60s / +60s) Controls
                         Row(
                             modifier = Modifier.align(Alignment.Center),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(36.dp)
+                            horizontalArrangement = Arrangement.spacedBy(32.dp)
                         ) {
-                            // -10s
-                            IconButton(
-                                onClick = {
-                                    val newPos = (currentPositionMs - 10000).coerceAtLeast(0L)
-                                    currentPositionMs = newPos
-                                    try { videoViewRef?.seekTo(newPos.toInt()) } catch (_: Exception) {}
-                                },
-                                modifier = Modifier.size(44.dp)
+                            // Rewind (-60s button)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        val newPos = (currentPositionMs - 60000).coerceAtLeast(0L)
+                                        currentPositionMs = newPos
+                                        try { videoViewRef?.seekTo(newPos.toInt()) } catch (_: Exception) {}
+                                        skipFeedbackText = "-60s"
+                                    }
+                                    .padding(8.dp)
+                                    .testTag("player_rewind_60s_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.FastRewind,
-                                    contentDescription = "Rewind 10s",
+                                    contentDescription = "Rewind 60s",
                                     tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Text(
+                                    text = "-60s",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
 
-                            // Play/Pause
+                            // Center: Play / Pause (▶ / ❚❚)
                             Box(
                                 modifier = Modifier
-                                    .size(60.dp)
+                                    .size(64.dp)
                                     .clip(CircleShape)
                                     .background(Color(0x99000000))
                                     .clickable {
@@ -571,29 +601,40 @@ fun ModernPlayerScreen(
                                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = if (isPlaying) "Pause" else "Play",
                                     tint = Color.White,
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(40.dp)
                                 )
                             }
 
-                            // +10s
-                            IconButton(
-                                onClick = {
-                                    val newPos = (currentPositionMs + 10000).coerceAtMost(totalDurationMs)
-                                    currentPositionMs = newPos
-                                    try { videoViewRef?.seekTo(newPos.toInt()) } catch (_: Exception) {}
-                                },
-                                modifier = Modifier.size(44.dp)
+                            // Forward (+60s button)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        val newPos = (currentPositionMs + 60000).coerceAtMost(totalDurationMs)
+                                        currentPositionMs = newPos
+                                        try { videoViewRef?.seekTo(newPos.toInt()) } catch (_: Exception) {}
+                                        skipFeedbackText = "+60s"
+                                    }
+                                    .padding(8.dp)
+                                    .testTag("player_forward_60s_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.FastForward,
-                                    contentDescription = "Forward 10s",
+                                    contentDescription = "Forward 60s",
                                     tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Text(
+                                    text = "+60s",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
 
-                        // Bottom Player Bar: Time and Seekbar
+                        // Bottom Player Bar: Red Progress Seekbar with Timestamp Display
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -608,7 +649,8 @@ fun ModernPlayerScreen(
                                     text = "${formatTime(currentPositionMs)} / ${formatTime(totalDurationMs)}",
                                     color = Color.White,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.testTag("player_time_display")
                                 )
                                 Spacer(modifier = Modifier.weight(1f))
                                 if (playbackSpeed != 1.0f) {
@@ -617,6 +659,18 @@ fun ModernPlayerScreen(
                                         color = YtRed,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                IconButton(
+                                    onClick = { isFullscreen = !isFullscreen },
+                                    modifier = Modifier.size(28.dp).testTag("player_fullscreen_button")
+                                ) {
+                                    Icon(
+                                        imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                        contentDescription = "Fullscreen",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -1077,7 +1131,7 @@ fun ModernPlayerScreen(
                     }
                 }
 
-                // Comments Preview Card (Screenshot 2)
+                // 3. OFFLINE COMMENTS CARD (Local Storage / Offline Comments)
                 item {
                     Box(
                         modifier = Modifier
@@ -1085,13 +1139,15 @@ fun ModernPlayerScreen(
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(YtSurfaceVariant)
-                            .clickable { onOpenComments() }
                             .padding(12.dp)
                             .testTag("player_comments_card")
                     ) {
                         Column {
+                            // Total Comments Count & Header
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onOpenComments() },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -1100,34 +1156,122 @@ fun ModernPlayerScreen(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "8.1k",
+                                    text = "${localCommentsList.size + 142}",
                                     color = YtTextSecondary,
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                Text(
+                                    text = "View all",
+                                    color = YtTextSecondary,
+                                    fontSize = 11.sp
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Local Storage Input Field ("Add a comment...")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(24.dp)
+                                        .size(28.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF2E7D32)),
+                                        .background(Color(0xFF1E88E5)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("B", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("U", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (video.userNotes.isNotBlank()) video.userNotes else "Vote for moni di bf face reveal 💖",
-                                    color = YtTextPrimary,
-                                    fontSize = 12.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                OutlinedTextField(
+                                    value = commentInputText,
+                                    onValueChange = { commentInputText = it },
+                                    placeholder = {
+                                        Text("Add a comment...", fontSize = 12.sp, color = YtTextSecondary)
+                                    },
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = YtRed,
+                                        unfocusedBorderColor = Color(0x33FFFFFF),
+                                        focusedTextColor = YtTextPrimary,
+                                        unfocusedTextColor = YtTextPrimary,
+                                        cursorColor = YtRed
+                                    ),
+                                    shape = RoundedCornerShape(18.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(46.dp)
+                                        .testTag("player_comment_input")
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(
+                                    onClick = {
+                                        if (commentInputText.isNotBlank()) {
+                                            val newComment = commentInputText.trim()
+                                            val updated = (listOf(newComment) + localCommentsList).distinct()
+                                            localCommentsList = updated
+                                            val currentSaved = sharedPrefs.getStringSet("comments_${video.id}", null) ?: emptySet()
+                                            sharedPrefs.edit()
+                                                .putStringSet("comments_${video.id}", currentSaved + newComment)
+                                                .apply()
+                                            commentInputText = ""
+                                        }
+                                    },
+                                    enabled = commentInputText.isNotBlank(),
+                                    modifier = Modifier.size(36.dp).testTag("player_comment_send_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Post Comment",
+                                        tint = if (commentInputText.isNotBlank()) YtRed else Color(0x44FFFFFF),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Dynamic list showing locally saved comments under active video
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                localCommentsList.take(3).forEachIndexed { idx, commentItem ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .background(if (idx % 2 == 0) Color(0xFF2E7D32) else Color(0xFFE65100)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (idx % 2 == 0) "B" else "A",
+                                                color = Color.White,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = commentItem,
+                                                color = YtTextPrimary,
+                                                fontSize = 12.sp,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                lineHeight = 15.sp
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -1350,73 +1494,106 @@ private fun UpNextVideoCard(
     video: VideoItem,
     onClick: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
-            .testTag("up_next_card_${video.id}"),
-        verticalAlignment = Alignment.Top
+            .padding(bottom = 16.dp)
+            .testTag("up_next_card_${video.id}")
     ) {
-        // Thumbnail 16:9
+        // Full-width 16:9 Thumbnail on top with Duration Badge at bottom-right
         Box(
             modifier = Modifier
-                .width(130.dp)
+                .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black)
         ) {
             VideoThumbnailView(
                 video = video,
-                modifier = Modifier.matchParentSize()
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
 
             // Duration badge overlay at bottom right
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(4.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xCC000000))
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = video.formattedDuration,
                     color = Color.White,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = video.displayTitle,
-                color = YtTextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 16.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${video.displayChannelName} • ${video.viewsCount}",
-                color = YtTextSecondary,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        // Details Row below thumbnail: Channel Avatar, Title, Channel Name, Views, 3-dots Menu
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            // Channel Avatar
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(YtAvatarPurple),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = video.displayChannelName.take(1).uppercase(),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
 
-        IconButton(onClick = { }, modifier = Modifier.size(28.dp)) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = null,
-                tint = YtTextSecondary,
-                modifier = Modifier.size(16.dp)
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Title & Channel / Views Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = video.displayTitle,
+                    color = YtTextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "${video.displayChannelName} • ${video.viewsCount} • ${video.uploadedAgo}",
+                    color = YtTextSecondary,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // 3-dot Option Menu
+            IconButton(
+                onClick = { },
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(top = 2.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    tint = YtTextSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
