@@ -260,7 +260,7 @@ fun ModernPlayerScreen(
             .fillMaxSize()
             .background(YtDarkBackground)
     ) {
-        // Top 16:9 Video Player Container
+        // Top 16:9 Video Player Container (Subtle rounded corners matching YouTube player UI)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -268,6 +268,8 @@ fun ModernPlayerScreen(
                     if (isFullscreen) Modifier.fillMaxSize()
                     else Modifier
                         .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .aspectRatio(16f / 9f)
                 )
                 .background(Color.Black)
@@ -1505,6 +1507,8 @@ private fun UpNextVideoCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .aspectRatio(16f / 9f)
                 .background(Color.Black)
         ) {

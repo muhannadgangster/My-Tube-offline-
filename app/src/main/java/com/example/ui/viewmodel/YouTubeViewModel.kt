@@ -8,6 +8,7 @@ import com.example.data.SettingsManager
 import com.example.data.VideoItem
 import com.example.data.local.CommentEntity
 import com.example.data.repository.VideoRepository
+import com.example.util.NotificationHelper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -206,7 +207,7 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
         audioTitle: String = ""
     ) {
         viewModelScope.launch {
-            repository.saveRecordedShort(
+            val shortItem = repository.saveRecordedShort(
                 title = title,
                 hashtags = hashtags,
                 durationMs = durationMs,
@@ -215,6 +216,14 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
             )
             _showShortsCamera.value = false
             selectTab(1)
+
+            NotificationHelper.showNotification(
+                context = getApplication(),
+                notificationId = 1002,
+                title = "MyTube — Video ready",
+                message = "\"${shortItem.displayTitle}\" has been created and added to your Shorts feed.",
+                videoId = shortItem.id
+            )
         }
     }
 
@@ -450,6 +459,13 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
             val imported = repository.importVideo(uri, customTitle, hashtags)
             _showPlusSheet.value = false
             if (imported != null) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 1003,
+                    title = "MyTube — Video imported",
+                    message = "\"${imported.displayTitle}\" has been imported into your library.",
+                    videoId = imported.id
+                )
                 playVideo(imported)
             }
         }
@@ -463,6 +479,15 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
                 hashtags = "#Shorts #Trending #AutoClip #Gallery"
             )
             _showPlusSheet.value = false
+            if (imported != null) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 1004,
+                    title = "MyTube — New video added",
+                    message = "\"${imported.displayTitle}\" has been added to your Shorts feed.",
+                    videoId = imported.id
+                )
+            }
             selectTab(1) // Jump straight to Shorts
         }
     }

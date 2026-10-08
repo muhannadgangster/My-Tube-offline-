@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
 import com.example.data.local.VideoMetadata
 import com.example.util.MediaScannerHelper
+import com.example.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -103,6 +104,13 @@ class MediaScannerViewModel(application: Application) : AndroidViewModel(applica
             _scannedMediaCount.value = discoveredItems.size
             _statusMessage.value = "Scan complete. Found ${discoveredItems.size} local media items."
             _isScanning.value = false
+
+            NotificationHelper.showNotification(
+                context = getApplication(),
+                notificationId = 1001,
+                title = "MyTube — Gallery scan complete",
+                message = "Scan complete. Discovered ${discoveredItems.size} media items from your device gallery."
+            )
         }
     }
 

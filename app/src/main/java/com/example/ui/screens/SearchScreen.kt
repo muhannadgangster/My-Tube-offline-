@@ -578,6 +578,8 @@ private fun SearchResultVideoCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .aspectRatio(16f / 9f)
                 .background(Color.Black)
         ) {

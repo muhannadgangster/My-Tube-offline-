@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import android.net.Uri
+import android.widget.VideoView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,8 +37,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.VideoItem
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtRed
@@ -79,6 +84,16 @@ fun FloatingMiniPlayer(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    var miniVideoViewRef by remember { mutableStateOf<VideoView?>(null) }
+    var isVideoPrepared by remember { mutableStateOf(false) }
+
+    DisposableEffect(video.id) {
+        onDispose {
+            try {
+                miniVideoViewRef?.stopPlayback()
+            } catch (_: Exception) {}
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val playerWidthDp = 220.dp
@@ -135,7 +150,7 @@ fun FloatingMiniPlayer(
                     .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Mini 16:9 Thumbnail / Video Box
+                // Mini 16:9 Live Video Player / Thumbnail Box
                 Box(
                     modifier = Modifier
                         .height(60.dp)
@@ -144,11 +159,47 @@ fun FloatingMiniPlayer(
                         .background(Color.Black),
                     contentAlignment = Alignment.Center
                 ) {
-                    VideoThumbnailView(
-                        video = video,
-                        contentScale = ContentScale.Crop,
+                    AndroidView(
+                        factory = { ctx ->
+                            VideoView(ctx).apply {
+                                try {
+                                    setOnErrorListener { _, _, _ -> true }
+                                    if (!video.id.startsWith("sample_")) {
+                                        setVideoURI(Uri.parse(video.uriString))
+                                    }
+                                    setOnPreparedListener { mp ->
+                                        isVideoPrepared = true
+                                        mp.isLooping = true
+                                        if (video.watchPositionMs > 1000L) {
+                                            seekTo(video.watchPositionMs.toInt())
+                                        }
+                                        if (!isPaused) start()
+                                    }
+                                } catch (_: Exception) {}
+                                miniVideoViewRef = this
+                            }
+                        },
+                        update = { vv ->
+                            miniVideoViewRef = vv
+                            try {
+                                if (isPaused) {
+                                    if (vv.isPlaying) vv.pause()
+                                } else {
+                                    if (!vv.isPlaying) vv.start()
+                                }
+                            } catch (_: Exception) {}
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
+
+                    // Fallback poster when loading or before video renders
+                    if (!isVideoPrepared || video.id.startsWith("sample_")) {
+                        VideoThumbnailView(
+                            video = video,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
                     // Expand indicator badge
                     Box(

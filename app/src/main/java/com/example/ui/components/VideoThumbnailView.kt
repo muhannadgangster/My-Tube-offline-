@@ -39,7 +39,8 @@ import kotlin.math.abs
 fun VideoThumbnailView(
     video: VideoItem,
     modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Crop
+    contentScale: ContentScale = ContentScale.Crop,
+    cornerRadius: androidx.compose.ui.unit.Dp = 12.dp
 ) {
     val context = LocalContext.current
     var bitmap by remember(video.id) { mutableStateOf<Bitmap?>(null) }
@@ -57,6 +58,7 @@ fun VideoThumbnailView(
 
     Box(
         modifier = modifier
+            .clip(RoundedCornerShape(cornerRadius))
             .background(Color(0xFF1E1E1E)),
         contentAlignment = Alignment.Center
     ) {

@@ -125,12 +125,13 @@ fun MyTubeApp(
     var showCreateClipDialog by remember { mutableStateOf(false) }
     var showSplashScreen by remember { mutableStateOf(true) }
 
-    // Runtime Permission Request on App Launch (Handles both Videos & Images)
+    // Runtime Permission Request on App Launch (Handles Videos, Images, Audio, & Notifications)
     val permissionsToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(
             Manifest.permission.READ_MEDIA_VIDEO,
             Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_AUDIO
+            Manifest.permission.READ_MEDIA_AUDIO,
+            Manifest.permission.POST_NOTIFICATIONS
         )
     } else {
         arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -309,6 +310,7 @@ fun MyTubeApp(
                                 shortsList = shortsVideos,
                                 selectedFilter = selectedFilter,
                                 isRefreshing = isRefreshing,
+                                isScanningMedia = isScanningMedia,
                                 onRefresh = {
                                     viewModel.refreshFeed()
                                     coroutineScope.launch {

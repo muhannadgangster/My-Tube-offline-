@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -65,6 +66,7 @@ fun HomeScreen(
     shortsList: List<VideoItem> = emptyList(),
     selectedFilter: String,
     isRefreshing: Boolean = false,
+    isScanningMedia: Boolean = false,
     onRefresh: () -> Unit = {},
     onFilterSelected: (String) -> Unit,
     onVideoClick: (VideoItem) -> Unit,
@@ -165,8 +167,41 @@ fun HomeScreen(
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize()
         ) {
-            if (videos.isEmpty()) {
-                // Empty state
+            if (isScanningMedia && videos.isEmpty()) {
+                // Scanning state: Scanning your gallery...
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = YtRed,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = "Scanning your gallery...",
+                            color = YtTextPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Discovering videos from device storage",
+                            color = YtTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else if (videos.isEmpty()) {
+                // Scan completed + no videos
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -182,15 +217,15 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No local videos found in this filter",
+                            text = "No videos found",
                             color = YtTextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Pull down to refresh & mix, or scan storage.",
+                            text = "Pull down to scan your gallery or refresh.",
                             color = YtTextSecondary,
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -202,7 +237,7 @@ fun HomeScreen(
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = null, tint = YtTextPrimary)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Refresh & Mix 🔀", color = YtTextPrimary)
+                            Text("Rescan Gallery 🔄", color = YtTextPrimary)
                         }
                     }
                 }
