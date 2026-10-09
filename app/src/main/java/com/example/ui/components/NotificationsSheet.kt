@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,8 +21,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,92 +44,49 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.YtAvatarIndigo
-import com.example.ui.theme.YtAvatarOrange
-import com.example.ui.theme.YtAvatarPurple
-import com.example.ui.theme.YtAvatarTeal
+import com.example.data.VideoItem
+import com.example.data.local.AppNotificationEntity
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtPillActive
 import com.example.ui.theme.YtPillActiveText
 import com.example.ui.theme.YtPillBackground
-import com.example.ui.theme.YtRed
-import com.example.ui.theme.YtSurfaceDark
-import com.example.ui.theme.YtSurfaceVariant
 import com.example.ui.theme.YtTextPrimary
 import com.example.ui.theme.YtTextSecondary
 
-data class NotificationModel(
-    val id: String,
-    val channelName: String,
-    val actionText: String,
-    val timeAgo: String,
-    val isUnread: Boolean = true,
-    val avatarBg: Color = YtAvatarPurple,
-    val thumbnailPlaceholderColor: Color = Color(0xFF222222)
-)
-
 /**
- * Notifications screen matching Screenshot 3:
- * - Top header with Back arrow, "Notifications", Search, More (3-dots)
- * - Filter pills: "All" and "Mentions"
- * - "Important" section with blue unread dot, channel avatar, title, timestamp, and thumbnail on right
+ * Real In-App Notification Center:
+ * - Displays only REAL locally generated notifications (gallery scan, video imported, video created, video ready)
+ * - Persisted in local Room database
+ * - Real-time unread badge
+ * - Tap to mark as read and view corresponding video
+ * - "No notifications yet" empty state
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsSheet(
+    notifications: List<AppNotificationEntity>,
+    allVideos: List<VideoItem> = emptyList(),
+    onNotificationClick: (AppNotificationEntity) -> Unit,
+    onMarkAllAsRead: () -> Unit,
+    onClearAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedFilter by remember { mutableStateOf("All") }
+    var showMenu by remember { mutableStateOf(false) }
 
-    val notifications = remember {
-        listOf(
-            NotificationModel(
-                id = "n1",
-                channelName = "Soneha Sisters",
-                actionText = "Uploaded: 7 Seconds Challenge With Sisters 😱 Day 130/200",
-                timeAgo = "1 hour ago",
-                avatarBg = YtAvatarPurple,
-                thumbnailPlaceholderColor = Color(0xFF332211)
-            ),
-            NotificationModel(
-                id = "n2",
-                channelName = "MathHelper",
-                actionText = "Uploaded: 2016 Ex 1 Qn 6 and 7 on rational...",
-                timeAgo = "17 hours ago",
-                avatarBg = YtAvatarTeal,
-                thumbnailPlaceholderColor = Color(0xFF223322)
-            ),
-            NotificationModel(
-                id = "n3",
-                channelName = "D craft life style",
-                actionText = "Uploaded: my biggest dream custom phone case",
-                timeAgo = "15 hours ago",
-                avatarBg = YtAvatarOrange,
-                thumbnailPlaceholderColor = Color(0xFF222233)
-            ),
-            NotificationModel(
-                id = "n4",
-                channelName = "For you",
-                actionText = "Build Android App in Google AI Studio • New Tools",
-                timeAgo = "12 hours ago",
-                avatarBg = YtAvatarIndigo,
-                thumbnailPlaceholderColor = Color(0xFF113333)
-            ),
-            NotificationModel(
-                id = "n5",
-                channelName = "For you",
-                actionText = "Bank manager 😂 galat fas gya 😂 #Shorts",
-                timeAgo = "2 hours ago",
-                avatarBg = YtAvatarTeal,
-                thumbnailPlaceholderColor = Color(0xFF331122)
-            )
-        )
+    val filteredNotifications = remember(notifications, selectedFilter) {
+        when (selectedFilter) {
+            "Unread" -> notifications.filter { !it.isRead }
+            else -> notifications
+        }
     }
 
     ModalBottomSheet(
@@ -138,15 +100,19 @@ fun NotificationsSheet(
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()
+                .testTag("notifications_sheet")
         ) {
-            // Header (Screenshot 3 style)
+            // Header (YouTube styled)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.testTag("notifications_back_button")
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
@@ -164,33 +130,56 @@ fun NotificationsSheet(
                         .padding(start = 4.dp)
                 )
 
-                IconButton(onClick = { /* Search notifications */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = YtTextPrimary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.testTag("notifications_menu_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More",
+                            tint = YtTextPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
 
-                IconButton(onClick = { /* Menu */ }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More",
-                        tint = YtTextPrimary,
-                        modifier = Modifier.size(22.dp)
-                    )
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color(0xFF282828))
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Mark all as read", color = Color.White) },
+                            leadingIcon = {
+                                Icon(Icons.Default.DoneAll, contentDescription = null, tint = Color.White)
+                            },
+                            onClick = {
+                                showMenu = false
+                                onMarkAllAsRead()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Clear all notifications", color = Color.White) },
+                            leadingIcon = {
+                                Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White)
+                            },
+                            onClick = {
+                                showMenu = false
+                                onClearAll()
+                            }
+                        )
+                    }
                 }
             }
 
-            // Filter Tabs: "All" and "Mentions" (Screenshot 3)
+            // Filter Tabs: "All" and "Unread"
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("All", "Mentions").forEach { tab ->
+                listOf("All", "Unread").forEach { tab ->
                     val isSelected = selectedFilter == tab
                     Box(
                         modifier = Modifier
@@ -198,6 +187,7 @@ fun NotificationsSheet(
                             .background(if (isSelected) YtPillActive else YtPillBackground)
                             .clickable { selectedFilter = tab }
                             .padding(horizontal = 14.dp, vertical = 6.dp)
+                            .testTag("filter_tab_$tab")
                     ) {
                         Text(
                             text = tab,
@@ -209,25 +199,70 @@ fun NotificationsSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Section Header: "Important"
-            Text(
-                text = "Important",
-                color = YtTextSecondary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
+            if (filteredNotifications.isEmpty()) {
+                // Empty State strictly compliant with requirements: "No notifications yet"
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsNone,
+                            contentDescription = null,
+                            tint = YtTextSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No notifications yet",
+                            color = YtTextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Real activity notifications will appear here when videos are scanned, imported, or created.",
+                            color = YtTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = "Recent",
+                    color = YtTextSecondary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
 
-            // Notifications List
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(notifications, key = { it.id }) { item ->
-                    NotificationCard(item = item)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .testTag("notifications_list")
+                ) {
+                    items(filteredNotifications, key = { it.id }) { item ->
+                        val matchingVideo = item.videoId?.let { vid ->
+                            allVideos.find { it.id == vid }
+                        }
+                        NotificationCard(
+                            item = item,
+                            matchingVideo = matchingVideo,
+                            onClick = { onNotificationClick(item) }
+                        )
+                    }
                 }
             }
         }
@@ -235,34 +270,40 @@ fun NotificationsSheet(
 }
 
 @Composable
-private fun NotificationCard(item: NotificationModel) {
+private fun NotificationCard(
+    item: AppNotificationEntity,
+    matchingVideo: VideoItem?,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Handle click */ }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .testTag("notification_item_${item.id}"),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Blue unread dot indicator (Screenshot 3)
+        // Blue unread dot indicator
         Box(
             modifier = Modifier
-                .size(6.dp)
+                .size(8.dp)
                 .clip(CircleShape)
-                .background(if (item.isUnread) Color(0xFF3EA6FF) else Color.Transparent)
+                .background(if (!item.isRead) Color(0xFF3EA6FF) else Color.Transparent)
         )
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Channel Avatar Circle
+        // Avatar Circle
         Box(
             modifier = Modifier
                 .size(42.dp)
                 .clip(CircleShape)
-                .background(item.avatarBg),
+                .background(item.avatarColor),
             contentAlignment = Alignment.Center
         ) {
+            val initial = item.title.firstOrNull()?.uppercase() ?: "M"
             Text(
-                text = item.channelName.take(1).uppercase(),
+                text = initial,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
@@ -271,17 +312,18 @@ private fun NotificationCard(item: NotificationModel) {
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Notification Text (Channel Name, Title, Timestamp)
+        // Notification Content
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = item.channelName,
+                text = item.title,
                 color = YtTextPrimary,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = if (!item.isRead) FontWeight.Bold else FontWeight.SemiBold
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = item.actionText,
-                color = YtTextPrimary,
+                text = item.message,
+                color = if (!item.isRead) YtTextPrimary else YtTextSecondary,
                 fontSize = 12.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -296,30 +338,28 @@ private fun NotificationCard(item: NotificationModel) {
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Video Thumbnail on the right side (Screenshot 3)
+        // Video Thumbnail or Placeholder indicator on the right side
         Box(
             modifier = Modifier
                 .size(64.dp, 36.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(item.thumbnailPlaceholderColor)
+                .background(Color(0xFF222222))
                 .border(0.5.dp, YtBorder, RoundedCornerShape(6.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "▶",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 12.sp
-            )
+            if (matchingVideo != null) {
+                VideoThumbnailView(
+                    video = matchingVideo,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
-
-        Spacer(modifier = Modifier.width(6.dp))
-
-        // 3-dots Menu
-        Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = "Options",
-            tint = YtTextSecondary,
-            modifier = Modifier.size(20.dp)
-        )
     }
 }

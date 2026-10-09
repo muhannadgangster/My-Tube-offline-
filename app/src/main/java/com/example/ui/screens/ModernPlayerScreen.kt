@@ -250,7 +250,14 @@ fun ModernPlayerScreen(
     }
     var localCommentsList by remember(video.id) {
         val savedSet = sharedPrefs.getStringSet("comments_${video.id}", null) ?: emptySet()
-        val defaultList = if (video.userNotes.isNotBlank()) listOf(video.userNotes) else listOf("Vote for moni di bf face reveal 💖", "Amazing offline playback! 🔥")
+        val defaultList = if (video.userNotes.isNotBlank()) {
+            listOf(video.userNotes)
+        } else {
+            listOf(
+                "Enjoyed watching \"${video.displayTitle.take(30)}\" offline!",
+                "Great offline playback quality 👍"
+            )
+        }
         mutableStateOf((defaultList + savedSet.toList()).distinct())
     }
     var commentInputText by remember { mutableStateOf("") }

@@ -6,13 +6,16 @@ import android.provider.MediaStore
 import android.util.Log
 import com.example.data.VideoItem
 import com.example.data.local.AppDatabase
+import com.example.data.local.AppNotificationEntity
 import com.example.data.local.CommentEntity
 import com.example.data.local.VideoEntity
+import com.example.util.LocalCommentGenerator
 import com.example.util.MediaScannerHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -355,8 +358,56 @@ class VideoRepository(private val context: Context) {
         dao.updateLikeStatusWithCount(id = id, isLiked = newLiked, isDisliked = false, likesCount = newCount)
     }
 
-    fun getCommentsForVideo(videoId: String): Flow<List<CommentEntity>> =
-        db.commentDao().getCommentsForVideo(videoId).flowOn(Dispatchers.IO)
+    fun getCommentsForVideo(videoId: String): Flow<List<CommentEntity>> {
+        // Asynchronously check if the video has comments; if not, generate 3-4 local comments once
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val count = db.commentDao().getCommentCountDirect(videoId)
+                if (count == 0) {
+                    val metadata = dao.getById(videoId)
+                    if (metadata != null) {
+                        val isShort = metadata.isPhotoSlideshow || metadata.id.startsWith("short_clip_") || (metadata.height > metadata.width && metadata.height > 0) || (metadata.durationMs in 1..90000)
+                        val generated = LocalCommentGenerator.generateLocalComments(
+                            videoId = videoId,
+                            title = metadata.customTitle ?: metadata.originalTitle,
+                            channelName = metadata.customChannelName ?: metadata.channelName,
+                            durationMs = metadata.durationMs,
+                            isShort = isShort
+                        )
+                        generated.forEach { comment ->
+                            db.commentDao().insertComment(comment)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return db.commentDao().getCommentsForVideo(videoId).flowOn(Dispatchers.IO)
+    }
+
+    suspend fun deleteVideo(id: String) = withContext(Dispatchers.IO) {
+        dao.deleteById(id)
+        db.commentDao().deleteCommentsForVideo(id)
+        db.appNotificationDao().deleteNotification(id)
+    }
+
+    // In-App Notifications
+    val notificationsFlow: Flow<List<AppNotificationEntity>> =
+        db.appNotificationDao().getAllNotifications().flowOn(Dispatchers.IO)
+
+    val unreadNotificationCountFlow: Flow<Int> =
+        db.appNotificationDao().getUnreadCount().flowOn(Dispatchers.IO)
+
+    suspend fun markNotificationAsRead(id: String) = withContext(Dispatchers.IO) {
+        db.appNotificationDao().markAsRead(id)
+    }
+
+    suspend fun markAllNotificationsAsRead() = withContext(Dispatchers.IO) {
+        db.appNotificationDao().markAllAsRead()
+    }
+
+    suspend fun clearAllNotifications() = withContext(Dispatchers.IO) {
+        db.appNotificationDao().clearAll()
+    }
 
     fun getCommentCountForVideo(videoId: String): Flow<Int> =
         db.commentDao().getCommentCountForVideo(videoId).flowOn(Dispatchers.IO)

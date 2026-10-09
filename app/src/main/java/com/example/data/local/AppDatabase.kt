@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [VideoMetadata::class, CommentEntity::class], version = 4, exportSchema = false)
+@Database(
+    entities = [VideoMetadata::class, CommentEntity::class, AppNotificationEntity::class],
+    version = 5,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun videoMetadataDao(): VideoMetadataDao
     abstract fun commentDao(): CommentDao
+    abstract fun appNotificationDao(): AppNotificationDao
     fun videoDao(): VideoMetadataDao = videoMetadataDao()
 
     companion object {

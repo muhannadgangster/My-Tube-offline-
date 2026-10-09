@@ -118,6 +118,8 @@ fun MyTubeApp(
     val commentingVideo by viewModel.commentingVideo.collectAsStateWithLifecycle()
     val activeComments by viewModel.activeComments.collectAsStateWithLifecycle()
     val showNotificationsSheet by viewModel.showNotificationsSheet.collectAsStateWithLifecycle()
+    val notificationsList by viewModel.notifications.collectAsStateWithLifecycle()
+    val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
     val showSettings by viewModel.showSettings.collectAsStateWithLifecycle()
     val showShortsCamera by viewModel.showShortsCamera.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
@@ -282,6 +284,7 @@ fun MyTubeApp(
                                     snackbarHostState.showSnackbar("Videos & Shorts shuffled! 🔀")
                                 }
                             },
+                            unreadNotificationCount = unreadNotificationCount,
                             userAvatarUri = userAvatarUri,
                             userName = userName
                         )
@@ -396,7 +399,8 @@ fun MyTubeApp(
                                     viewModel.setSearchActive(true)
                                 },
                                 onNotificationsClick = { viewModel.setNotificationsSheetOpen(true) },
-                                onSettingsClick = { viewModel.setSettingsOpen(true) }
+                                onSettingsClick = { viewModel.setSettingsOpen(true) },
+                                unreadNotificationCount = unreadNotificationCount
                             )
                         }
                     }
@@ -491,6 +495,20 @@ fun MyTubeApp(
         // Notifications Sheet
         if (showNotificationsSheet) {
             NotificationsSheet(
+                notifications = notificationsList,
+                allVideos = allVideos,
+                onNotificationClick = { notif ->
+                    viewModel.markNotificationAsRead(notif.id)
+                    notif.videoId?.let { vidId ->
+                        val matchingVideo = allVideos.find { it.id == vidId }
+                        if (matchingVideo != null) {
+                            viewModel.setNotificationsSheetOpen(false)
+                            viewModel.playVideo(matchingVideo)
+                        }
+                    }
+                },
+                onMarkAllAsRead = { viewModel.markAllNotificationsAsRead() },
+                onClearAll = { viewModel.clearAllNotifications() },
                 onDismiss = { viewModel.setNotificationsSheetOpen(false) }
             )
         }

@@ -80,6 +80,7 @@ fun LibraryScreen(
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    unreadNotificationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -95,7 +96,8 @@ fun LibraryScreen(
                 onAccountClick = onEditProfileClick,
                 onNotificationsClick = onNotificationsClick,
                 onSearchClick = onSearchClick,
-                onSettingsClick = onSettingsClick
+                onSettingsClick = onSettingsClick,
+                unreadNotificationCount = unreadNotificationCount
             )
         }
 
@@ -497,6 +499,7 @@ fun YouTabHeader(
     onNotificationsClick: () -> Unit,
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    unreadNotificationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -547,17 +550,27 @@ fun YouTabHeader(
                     .size(38.dp)
                     .testTag("you_notification_button")
             ) {
-                BadgedBox(
-                    badge = {
-                        Badge(
-                            containerColor = YtRed,
-                            contentColor = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        ) {
-                            Text("1", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                if (unreadNotificationCount > 0) {
+                    BadgedBox(
+                        badge = {
+                            Badge(
+                                containerColor = YtRed,
+                                contentColor = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            ) {
+                                val badgeText = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString()
+                                Text(badgeText, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
-                ) {
+                } else {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = "Notifications",

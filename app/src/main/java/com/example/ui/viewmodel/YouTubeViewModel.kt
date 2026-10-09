@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.SettingsManager
 import com.example.data.VideoItem
+import com.example.data.local.AppNotificationEntity
 import com.example.data.local.CommentEntity
 import com.example.data.repository.VideoRepository
 import com.example.util.NotificationHelper
@@ -118,9 +119,33 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // Notification sheet
+    // Notification sheet & real in-app notifications
     private val _showNotificationsSheet = MutableStateFlow(false)
     val showNotificationsSheet: StateFlow<Boolean> = _showNotificationsSheet.asStateFlow()
+
+    val notifications: StateFlow<List<AppNotificationEntity>> = repository.notificationsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val unreadNotificationCount: StateFlow<Int> = repository.unreadNotificationCountFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    fun markNotificationAsRead(id: String) {
+        viewModelScope.launch {
+            repository.markNotificationAsRead(id)
+        }
+    }
+
+    fun markAllNotificationsAsRead() {
+        viewModelScope.launch {
+            repository.markAllNotificationsAsRead()
+        }
+    }
+
+    fun clearAllNotifications() {
+        viewModelScope.launch {
+            repository.clearAllNotifications()
+        }
+    }
 
     // Full Settings Screen Navigation
     private val _showSettings = MutableStateFlow(false)

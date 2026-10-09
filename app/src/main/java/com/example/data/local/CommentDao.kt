@@ -25,4 +25,7 @@ interface CommentDao {
 
     @Query("DELETE FROM video_comments WHERE commentId = :commentId")
     suspend fun deleteComment(commentId: Long)
+
+    @Query("DELETE FROM video_comments WHERE videoId = :videoId")
+    suspend fun deleteCommentsForVideo(videoId: String)
 }

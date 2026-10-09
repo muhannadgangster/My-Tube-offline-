@@ -62,6 +62,7 @@ fun YouTubeTopBar(
     onNotificationsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onShuffleClick: () -> Unit = {},
+    unreadNotificationCount: Int = 0,
     userAvatarUri: String? = null,
     userName: String = "Muhannad Murtaza",
     modifier: Modifier = Modifier
@@ -200,17 +201,27 @@ fun YouTubeTopBar(
                         .size(40.dp)
                         .testTag("notification_button")
                 ) {
-                    BadgedBox(
-                        badge = {
-                            Badge(
-                                containerColor = YtRed,
-                                contentColor = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            ) {
-                                Text("1", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    if (unreadNotificationCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = YtRed,
+                                    contentColor = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                ) {
+                                    val badgeText = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString()
+                                    Text(badgeText, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = YtTextPrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
-                    ) {
+                    } else {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifications",

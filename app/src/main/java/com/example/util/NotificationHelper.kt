@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.launch
 import com.example.MainActivity
 import com.example.R
 
@@ -69,6 +70,23 @@ object NotificationHelper {
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(notificationId, builder.build())
+
+            // Also persist into local Room database for in-app notification center
+            try {
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    val db = com.example.data.local.AppDatabase.getInstance(context)
+                    db.appNotificationDao().insertNotification(
+                        com.example.data.local.AppNotificationEntity(
+                            id = "notif_${System.currentTimeMillis()}_$notificationId",
+                            title = title,
+                            message = message,
+                            timestamp = System.currentTimeMillis(),
+                            isRead = false,
+                            videoId = videoId
+                        )
+                    )
+                }
+            } catch (_: Exception) {}
         } catch (_: Exception) {}
     }
 }
