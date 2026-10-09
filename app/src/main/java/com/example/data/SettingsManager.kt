@@ -57,6 +57,17 @@ class SettingsManager(context: Context) {
             "Liquid Glass (Light)",
             "Liquid Glass with Reflection"
         )
+
+        val ACCENT_COLOR_OPTIONS = listOf(
+            "YouTube Red" to 0xFFFF0033L,
+            "Crimson Neon" to 0xFFFF1744L,
+            "Electric Cyan" to 0xFF00E5FFL,
+            "Vibrant Emerald" to 0xFF00E676L,
+            "Purple Flame" to 0xFFD500F9L,
+            "Sunset Gold" to 0xFFFFAB00L,
+            "Deep Sky Blue" to 0xFF2979FFL,
+            "Hot Pink" to 0xFFFF4081L
+        )
     }
 
     private val _uiTheme = MutableStateFlow(prefs.getString("ui_theme", "Dark Mode") ?: "Dark Mode")
@@ -64,6 +75,46 @@ class SettingsManager(context: Context) {
 
     private val _darkTheme = MutableStateFlow(prefs.getBoolean("dark_theme", true))
     val darkTheme: StateFlow<Boolean> = _darkTheme.asStateFlow()
+
+    // Custom Accent Color (Change app Red color: subscribe button, like button, icons, progress bars, etc.)
+    private val _customAccentColorHex = MutableStateFlow(prefs.getLong("custom_accent_color_hex", 0xFFFF0033L))
+    val customAccentColorHex: StateFlow<Long> = _customAccentColorHex.asStateFlow()
+
+    fun setCustomAccentColorHex(colorLong: Long) {
+        _customAccentColorHex.value = colorLong
+        prefs.edit().putLong("custom_accent_color_hex", colorLong).apply()
+    }
+
+    // Custom Background Photo (Persistent across app restarts)
+    private val _customBackgroundUri = MutableStateFlow(prefs.getString("custom_background_uri", null))
+    val customBackgroundUri: StateFlow<String?> = _customBackgroundUri.asStateFlow()
+
+    fun setCustomBackgroundUri(uri: String?) {
+        _customBackgroundUri.value = uri
+        if (uri == null) {
+            prefs.edit().remove("custom_background_uri").apply()
+        } else {
+            prefs.edit().putString("custom_background_uri", uri).apply()
+        }
+    }
+
+    // Custom Background Dimming & Blur
+    private val _customBackgroundDim = MutableStateFlow(prefs.getFloat("custom_background_dim", 0.75f))
+    val customBackgroundDim: StateFlow<Float> = _customBackgroundDim.asStateFlow()
+
+    fun setCustomBackgroundDim(dim: Float) {
+        _customBackgroundDim.value = dim
+        prefs.edit().putFloat("custom_background_dim", dim).apply()
+    }
+
+    // Ambient Neon Lighting / Glow for Player
+    private val _ambientNeonLighting = MutableStateFlow(prefs.getBoolean("ambient_neon_lighting", true))
+    val ambientNeonLighting: StateFlow<Boolean> = _ambientNeonLighting.asStateFlow()
+
+    fun setAmbientNeonLighting(enabled: Boolean) {
+        _ambientNeonLighting.value = enabled
+        prefs.edit().putBoolean("ambient_neon_lighting", enabled).apply()
+    }
 
     fun setUiTheme(theme: String) {
         _uiTheme.value = theme

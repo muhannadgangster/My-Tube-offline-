@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.dp
 // Local theme name provider
 val LocalUiTheme = staticCompositionLocalOf { "Dark Mode" }
 
+// Local Accent Color provider (Replaces or tints Red elements across the app: Subscribe, Like, Progress bars, etc.)
+val LocalAppAccentColor = staticCompositionLocalOf { YtRed }
+
 // 1. YouTube Dark Color Scheme (Standard Pure Dark)
 private val YouTubeDarkColorScheme = darkColorScheme(
     primary = YtRed,
