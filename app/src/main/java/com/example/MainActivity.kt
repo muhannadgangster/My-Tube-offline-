@@ -56,6 +56,10 @@ import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.ShortsCameraScreen
 import com.example.ui.screens.ShortsScreen
 import com.example.ui.screens.SubscriptionsScreen
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.viewmodel.MediaScannerViewModel
@@ -69,7 +73,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: YouTubeViewModel = viewModel()
             val uiTheme by viewModel.settingsManager.uiTheme.collectAsStateWithLifecycle()
-            MyApplicationTheme(uiTheme = uiTheme) {
+            val customAccentColorHex by viewModel.settingsManager.customAccentColorHex.collectAsStateWithLifecycle()
+            MyApplicationTheme(
+                uiTheme = uiTheme,
+                customAccentColorHex = customAccentColorHex
+            ) {
                 MyTubeApp(viewModel = viewModel)
             }
         }
@@ -124,6 +132,10 @@ fun MyTubeApp(
     val showShortsCamera by viewModel.showShortsCamera.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
+    val customBackgroundUri by viewModel.settingsManager.customBackgroundUri.collectAsStateWithLifecycle()
+    val customBackgroundDim by viewModel.settingsManager.customBackgroundDim.collectAsStateWithLifecycle()
+    val currentUiTheme by viewModel.settingsManager.uiTheme.collectAsStateWithLifecycle()
+
     var showCreateClipDialog by remember { mutableStateOf(false) }
     var showSplashScreen by remember { mutableStateOf(true) }
 
@@ -168,11 +180,33 @@ fun MyTubeApp(
         context.startActivity(Intent.createChooser(shareIntent, "Share video"))
     }
 
+    val hasCustomWallpaper = !customBackgroundUri.isNullOrBlank()
+    val isGlassTheme = currentUiTheme.contains("Liquid Glass")
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(YtDarkBackground)
+            .background(if (hasCustomWallpaper) Color.Black else YtDarkBackground)
     ) {
+        // Persistent Custom Background Wallpaper (Preserved across app closes / restarts)
+        if (hasCustomWallpaper) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(Uri.parse(customBackgroundUri))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Custom Wallpaper",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // User-adjustable dimming scrim for contrast
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = customBackgroundDim))
+            )
+        }
+
         if (showShortsCamera) {
             // Full YouTube Shorts Creation Camera Interface (Reference UI)
             ShortsCameraScreen(
@@ -267,7 +301,7 @@ fun MyTubeApp(
         } else {
             // Main App Shell with Top Bar and Bottom Bar
             Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
+                containerColor = if (hasCustomWallpaper || isGlassTheme) Color.Transparent else MaterialTheme.colorScheme.background,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                     if (selectedTab != 1 && selectedTab != 4) { // Hide top bar on Shorts (1) and 'You' (4) tabs to prevent duplicate header

@@ -63,6 +63,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import java.io.File
+import java.io.FileOutputStream
 import com.example.data.SettingsManager
 import com.example.ui.theme.YtAvatarPurple
 import com.example.ui.theme.YtBlue
@@ -119,6 +142,32 @@ fun SettingsScreen(
 
     val experimentalAiClips by settingsManager.experimentalAiClips.collectAsStateWithLifecycle()
     val experimentalAudioBooster by settingsManager.experimentalAudioBooster.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val customAccentColorHex by settingsManager.customAccentColorHex.collectAsStateWithLifecycle()
+    val customBackgroundUri by settingsManager.customBackgroundUri.collectAsStateWithLifecycle()
+    val customBackgroundDim by settingsManager.customBackgroundDim.collectAsStateWithLifecycle()
+    val ambientNeonLighting by settingsManager.ambientNeonLighting.collectAsStateWithLifecycle()
+
+    // Photo Picker Launcher with persistent file copying (Guaranteed to persist across app closes)
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val targetFile = File(context.filesDir, "custom_user_background.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(targetFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                val localSavedUri = Uri.fromFile(targetFile).toString()
+                settingsManager.setCustomBackgroundUri(localSavedUri)
+            } catch (e: Exception) {
+                settingsManager.setCustomBackgroundUri(uri.toString())
+            }
+        }
+    }
 
     // Dialog control states
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -218,6 +267,224 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // Section 0: Appearance, Colors & Wallpapers
+            item { SettingsSectionHeader("Appearance & Customization") }
+
+            // 1. Change App Red Color (Subscribe, Like, Progress, Badges)
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "App Accent Color (Change Red Color)",
+                        color = YtTextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Changes Subscribe button, Like button, Progress bars, and Badges",
+                        color = YtTextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SettingsManager.ACCENT_COLOR_OPTIONS.forEach { (name, hex) ->
+                            val isSelected = (customAccentColorHex == hex)
+                            val color = Color(hex)
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { settingsManager.setCustomAccentColorHex(hex) }
+                                    .padding(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .then(
+                                            if (isSelected) Modifier.border(2.5.dp, Color.White, CircleShape)
+                                            else Modifier
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = name.split(" ").first(),
+                                    color = if (isSelected) YtTextPrimary else YtTextSecondary,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Custom Background Wallpaper (Persists across app restart)
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "Custom Background Wallpaper",
+                        color = YtTextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Set your own photo as app wallpaper. Persists even after closing and reopening the app.",
+                        color = YtTextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!customBackgroundUri.isNullOrBlank()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(Uri.parse(customBackgroundUri))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Current wallpaper",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(1.dp, YtBorder, RoundedCornerShape(8.dp))
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+
+                        Button(
+                            onClick = {
+                                photoPickerLauncher.launch(
+                                    androidx.activity.result.PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = YtSurfaceVariant),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = null,
+                                tint = YtTextPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (customBackgroundUri.isNullOrBlank()) "Choose Photo 🖼️" else "Change Photo 🖼️",
+                                color = YtTextPrimary,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        if (!customBackgroundUri.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        File(context.filesDir, "custom_user_background.jpg").delete()
+                                    } catch (_: Exception) {}
+                                    settingsManager.setCustomBackgroundUri(null)
+                                }
+                            ) {
+                                Text("Remove", color = YtRed, fontSize = 12.sp)
+                            }
+                        }
+                    }
+
+                    if (!customBackgroundUri.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Wallpaper Dimming (Text Contrast)",
+                                color = YtTextSecondary,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = "${(customBackgroundDim * 100).toInt()}%",
+                                color = YtTextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Slider(
+                            value = customBackgroundDim,
+                            onValueChange = { settingsManager.setCustomBackgroundDim(it) },
+                            valueRange = 0.25f..0.95f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(customAccentColorHex),
+                                activeTrackColor = Color(customAccentColorHex)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
+            // 3. Liquid Glass UI Mode
+            val isLiquidGlassActive = uiTheme.contains("Liquid Glass")
+            item {
+                SettingsSwitchRow(
+                    title = "Liquid Glass Effect",
+                    subtitle = if (isLiquidGlassActive) "Liquid Glass frosted effect & reflective highlights (Active)" else "Standard YouTube flat theme (Off)",
+                    checked = isLiquidGlassActive,
+                    onCheckedChange = { isEnabled ->
+                        if (isEnabled) {
+                            settingsManager.setUiTheme("Liquid Glass with Reflection")
+                        } else {
+                            settingsManager.setUiTheme("Dark Mode")
+                        }
+                    }
+                )
+            }
+
+            // 4. Ambient Neon Edge Lights on Videos
+            item {
+                SettingsSwitchRow(
+                    title = "Ambient Neon Lights on Videos",
+                    subtitle = if (ambientNeonLighting) "Edge glow reflection blooming around video player (Active)" else "Standard player edges without glow (Off)",
+                    checked = ambientNeonLighting,
+                    onCheckedChange = { settingsManager.setAmbientNeonLighting(it) }
+                )
+            }
+
+            item { HorizontalDivider(color = YtBorder, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 8.dp)) }
 
             // Section 1: General
             item { SettingsSectionHeader("General") }

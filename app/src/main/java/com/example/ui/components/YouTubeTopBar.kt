@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalUiTheme
 import com.example.ui.theme.YtAvatarPurple
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtRed
@@ -67,10 +69,15 @@ fun YouTubeTopBar(
     userName: String = "Muhannad Murtaza",
     modifier: Modifier = Modifier
 ) {
+    val currentTheme = LocalUiTheme.current
+    val accentColor = LocalAppAccentColor.current
+    val isGlass = currentTheme.contains("Liquid Glass")
+    val barBackground = if (isGlass) Color(0xD90F0F0F) else MaterialTheme.colorScheme.background
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(barBackground)
             .statusBarsPadding()
             .height(56.dp)
             .padding(horizontal = 14.dp),
@@ -112,7 +119,7 @@ fun YouTubeTopBar(
                         color = YtTextPrimary,
                         fontSize = 15.sp
                     ),
-                    cursorBrush = SolidColor(YtRed),
+                    cursorBrush = SolidColor(accentColor),
                     decorationBox = { innerTextField ->
                         if (searchQuery.isEmpty()) {
                             Text(
@@ -154,7 +161,7 @@ fun YouTubeTopBar(
                         modifier = Modifier
                             .size(28.dp, 20.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(YtRed),
+                            .background(accentColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -205,7 +212,7 @@ fun YouTubeTopBar(
                         BadgedBox(
                             badge = {
                                 Badge(
-                                    containerColor = YtRed,
+                                    containerColor = accentColor,
                                     contentColor = Color.White,
                                     modifier = Modifier.size(16.dp)
                                 ) {

@@ -22,6 +22,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +88,7 @@ import com.example.data.VideoItem
 import com.example.ui.components.VideoThumbnailView
 import com.example.ui.theme.YtAvatarTeal
 import com.example.ui.theme.YtRed
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.util.ScalingUtils
 import com.example.util.scaled
 import kotlinx.coroutines.delay
@@ -198,6 +202,10 @@ private fun ShortsItemPage(
     var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
     var isSpeedBoosting by remember { mutableStateOf(false) }
 
+    // Heart Double-Tap Animation state & coordinates
+    var heartAnimOffset by remember { mutableStateOf<Offset?>(null) }
+    var showHeartAnim by remember { mutableStateOf(false) }
+
     // Spinning disc animation for sound card
     val infiniteTransition = rememberInfiniteTransition(label = "disc_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -256,6 +264,13 @@ private fun ShortsItemPage(
                             }
                         }
                         showPauseOverlay = true
+                    },
+                    onDoubleTap = { tapOffset ->
+                        heartAnimOffset = tapOffset
+                        showHeartAnim = true
+                        if (!video.isLiked) {
+                            onToggleLike()
+                        }
                     }
                 )
             }
@@ -320,8 +335,8 @@ private fun ShortsItemPage(
                 }
             }
 
-            // Fallback poster when paused or sample video
-            if (!isPlaying || video.id.startsWith("sample_")) {
+            // Fallback poster ONLY for sample mock items or before video loads (NOT when paused, so video stays paused right on current frame)
+            if (video.id.startsWith("sample_")) {
                 VideoThumbnailView(
                     video = video,
                     contentScale = ContentScale.Crop,
@@ -362,6 +377,41 @@ private fun ShortsItemPage(
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Heart Double-Tap Burst Animation at exact screen tap position
+        LaunchedEffect(showHeartAnim) {
+            if (showHeartAnim) {
+                delay(950)
+                showHeartAnim = false
+            }
+        }
+
+        if (showHeartAnim && heartAnimOffset != null) {
+            val density = LocalDensity.current
+            val offsetXdp = with(density) { heartAnimOffset!!.x.toDp() } - 50.dp
+            val offsetYdp = with(density) { heartAnimOffset!!.y.toDp() } - 50.dp
+            val accentColor = LocalAppAccentColor.current
+
+            AnimatedVisibility(
+                visible = showHeartAnim,
+                enter = fadeIn(tween(120)) + scaleIn(tween(250), initialScale = 0.2f),
+                exit = fadeOut(tween(350)) + scaleOut(tween(350), targetScale = 1.6f),
+                modifier = Modifier.padding(start = offsetXdp.coerceAtLeast(0.dp), top = offsetYdp.coerceAtLeast(0.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "❤️",
+                        fontSize = 58.sp
                     )
                 }
             }
@@ -550,6 +600,8 @@ private fun ShortsItemPage(
             }
         }
 
+        val appAccentColor = LocalAppAccentColor.current
+
         // Right Action Buttons Bar (Safely positioned above bottom navigation bar, aligned with info section)
         Column(
             modifier = Modifier
@@ -562,7 +614,7 @@ private fun ShortsItemPage(
             ShortsActionButton(
                 icon = if (video.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 label = video.formattedLikesCount,
-                tint = if (video.isLiked) YtRed else Color.White,
+                tint = if (video.isLiked) appAccentColor else Color.White,
                 testTag = "shorts_like_button",
                 onClick = onToggleLike
             )

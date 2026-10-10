@@ -49,6 +49,7 @@ import com.example.data.VideoItem
 import com.example.ui.components.HomeShortsShelf
 import com.example.ui.components.VideoFeedCard
 import com.example.ui.components.VideoThumbnailView
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtPillActive
@@ -81,10 +82,12 @@ fun HomeScreen(
 ) {
     val filterChips = listOf("All", "Videos", "Shorts", "Downloaded", "Favorites")
 
+    val appAccentColor = LocalAppAccentColor.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(YtDarkBackground)
+            .background(Color.Transparent)
     ) {
         // Filter Chips Row (Screenshot 6 style)
         Row(
@@ -127,7 +130,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.Shuffle,
                         contentDescription = "Mix & Shuffle",
-                        tint = YtRed,
+                        tint = appAccentColor,
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -243,7 +246,7 @@ fun HomeScreen(
                 }
             } else {
                 val effectiveShorts = if (shortsList.isNotEmpty()) shortsList else videos.filter { it.isShort }
-                val regularVideos = videos.filter { !it.isShort }
+                val regularVideos = if (videos.any { !it.isShort }) videos.filter { !it.isShort } else videos
 
                 LazyColumn(
                     modifier = Modifier
@@ -252,7 +255,7 @@ fun HomeScreen(
                     contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp)
                 ) {
                     if (selectedFilter == "Shorts") {
-                        // User selected "Shorts" filter chip: Show all shorts in 2-column grid
+                        // User selected "Shorts" filter chip: Show continuous shorts grid
                         item(key = "shorts_only_grid") {
                             HomeShortsShelf(
                                 shortsList = effectiveShorts,
@@ -260,8 +263,10 @@ fun HomeScreen(
                             )
                         }
                     } else if (selectedFilter == "Videos") {
-                        // User selected "Videos" filter chip: Show only long videos
-                        items(regularVideos, key = { it.id }) { video ->
+                        // User selected "Videos" filter chip: Show long videos with continuous cycle
+                        val repeatCycles = 200
+                        items(count = regularVideos.size * repeatCycles, key = { index -> "video_${index}_${regularVideos[index % regularVideos.size].id}" }) { index ->
+                            val video = regularVideos[index % regularVideos.size]
                             VideoFeedCard(
                                 video = video,
                                 onClick = { onVideoClick(video) },
@@ -273,17 +278,35 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        // "All" / General feed:
-                        // Chunk regular long-form videos in sets of 5, inserting a 2-Column Shorts Shelf Grid after each set
-                        val videoChunks = if (regularVideos.isNotEmpty()) {
-                            regularVideos.chunked(5)
-                        } else {
-                            listOf(emptyList())
+                        // "All" / General feed (YouTube Layout requested by User):
+                        // 1. TOP OF HOMEPAGE: Immediately show top Shorts shelf (6 shorts: 2 top, 2 middle, 2 bottom)
+                        if (effectiveShorts.isNotEmpty()) {
+                            item(key = "top_shorts_shelf_initial") {
+                                val top6Shorts = generateSequence { effectiveShorts }.flatten().take(6).toList()
+                                HomeShortsShelf(
+                                    shortsList = top6Shorts,
+                                    onShortClick = onShortClick
+                                )
+                            }
                         }
 
-                        videoChunks.forEachIndexed { chunkIndex, videoChunk ->
-                            // 1. Regular long-form videos
-                            items(videoChunk, key = { it.id }) { video ->
+                        // 2. INFINITE SCROLL: Chunks of 5 videos, followed by 6-Shorts shelves in endless seamless loop
+                        val videoBlockSize = 5
+                        val virtualCycles = 200
+                        val videoCount = if (regularVideos.isNotEmpty()) regularVideos.size else 1
+                        val totalVirtualBlocks = (videoCount * virtualCycles) / videoBlockSize
+
+                        for (blockIndex in 0 until totalVirtualBlocks.coerceAtLeast(10)) {
+                            // 5 Videos block
+                            items(
+                                count = videoBlockSize,
+                                key = { itemIdx ->
+                                    val actualIdx = (blockIndex * videoBlockSize + itemIdx) % regularVideos.size
+                                    "inf_video_block_${blockIndex}_item_${itemIdx}_${regularVideos[actualIdx].id}"
+                                }
+                            ) { itemIdx ->
+                                val actualIdx = (blockIndex * videoBlockSize + itemIdx) % regularVideos.size
+                                val video = regularVideos[actualIdx]
                                 VideoFeedCard(
                                     video = video,
                                     onClick = { onVideoClick(video) },
@@ -295,11 +318,14 @@ fun HomeScreen(
                                 )
                             }
 
-                            // 2. Insert Shorts Shelf 2-Column Grid widget after this set of regular videos!
+                            // Followed by 6 Shorts Shelf (2-column grid: 2, 2, 2)
                             if (effectiveShorts.isNotEmpty()) {
-                                item(key = "shorts_shelf_after_chunk_$chunkIndex") {
-                                    val offset = (chunkIndex * 4) % effectiveShorts.size
-                                    val shelfShorts = (effectiveShorts.drop(offset) + effectiveShorts.take(offset)).take(4)
+                                item(key = "inf_shorts_shelf_after_block_$blockIndex") {
+                                    val shelfShorts = generateSequence { effectiveShorts }
+                                        .flatten()
+                                        .drop((blockIndex + 1) * 6)
+                                        .take(6)
+                                        .toList()
                                     HomeShortsShelf(
                                         shortsList = shelfShorts,
                                         onShortClick = onShortClick

@@ -168,6 +168,7 @@ fun MyApplicationTheme(
     uiTheme: String = "Dark Mode",
     darkTheme: Boolean = (uiTheme != "Light Mode" && uiTheme != "Liquid Glass (Light)"),
     dynamicColor: Boolean = false,
+    customAccentColorHex: Long? = null,
     content: @Composable () -> Unit
 ) {
     val currentDensity = LocalDensity.current
@@ -176,7 +177,13 @@ fun MyApplicationTheme(
         fontScale = currentDensity.fontScale.coerceIn(0.85f, 1.15f)
     )
 
-    val colorScheme = when (uiTheme) {
+    val activeAccentColor = if (customAccentColorHex != null && customAccentColorHex != 0L) {
+        Color(customAccentColorHex)
+    } else {
+        YtRed
+    }
+
+    val baseColorScheme = when (uiTheme) {
         "Light Mode" -> YouTubeLightColorScheme
         "Liquid Glass (Dark)" -> LiquidGlassDarkColorScheme
         "Liquid Glass (Light)" -> LiquidGlassLightColorScheme
@@ -184,9 +191,14 @@ fun MyApplicationTheme(
         else -> YouTubeDarkColorScheme
     }
 
+    val colorScheme = baseColorScheme.copy(
+        primary = activeAccentColor
+    )
+
     CompositionLocalProvider(
         LocalDensity provides adaptiveDensity,
-        LocalUiTheme provides uiTheme
+        LocalUiTheme provides uiTheme,
+        LocalAppAccentColor provides activeAccentColor
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

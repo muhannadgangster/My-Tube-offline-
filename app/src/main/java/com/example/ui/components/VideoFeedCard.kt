@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.YtAvatarIndigo
 import com.example.ui.theme.YtAvatarOrange
 import com.example.ui.theme.YtAvatarPurple
@@ -116,7 +117,7 @@ fun VideoFeedCard(
                         .fillMaxWidth()
                         .height(3.dp)
                         .align(Alignment.BottomCenter),
-                    color = YtRed,
+                    color = LocalAppAccentColor.current,
                     trackColor = Color(0x66000000)
                 )
             }

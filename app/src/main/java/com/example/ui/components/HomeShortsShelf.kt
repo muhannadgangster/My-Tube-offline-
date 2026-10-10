@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.YtRed
 import com.example.ui.theme.YtSurfaceDark
 import com.example.ui.theme.YtTextPrimary
@@ -55,11 +56,12 @@ fun HomeShortsShelf(
     modifier: Modifier = Modifier
 ) {
     if (shortsList.isEmpty()) return
+    val accentColor = LocalAppAccentColor.current
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF000000))
+            .background(Color(0x33000000))
             .padding(vertical = 12.dp)
             .testTag("home_shorts_shelf")
     ) {
@@ -70,12 +72,12 @@ fun HomeShortsShelf(
                 .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Red Shorts Icon Badge
+            // Shorts Icon Badge with customizable accent color
             Box(
                 modifier = Modifier
                     .size(26.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(YtRed),
+                    .background(accentColor),
                 contentAlignment = Alignment.Center
             ) {
                 Text(

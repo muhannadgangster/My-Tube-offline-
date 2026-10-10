@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
@@ -93,6 +94,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -113,6 +115,7 @@ import com.example.ui.theme.YtPillActive
 import com.example.ui.theme.YtPillActiveText
 import com.example.ui.theme.YtPillBackground
 import com.example.ui.theme.YtRed
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.YtSurfaceDark
 import com.example.ui.theme.YtSurfaceHigher
 import com.example.ui.theme.YtSurfaceVariant
@@ -157,6 +160,9 @@ fun ModernPlayerScreen(
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
     var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
     var isSpeedBoosting by remember { mutableStateOf(false) }
+
+    val accentColor = LocalAppAccentColor.current
+    var isNeonLightsOn by remember { mutableStateOf(true) }
 
     val onSpeedSelected: (Float) -> Unit = { speed ->
         playbackSpeed = speed
@@ -267,7 +273,7 @@ fun ModernPlayerScreen(
             .fillMaxSize()
             .background(YtDarkBackground)
     ) {
-        // Top 16:9 Video Player Container (Subtle rounded corners matching YouTube player UI)
+        // Top 16:9 Video Player Container with Ambient Neon Edge Lights
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -276,11 +282,39 @@ fun ModernPlayerScreen(
                     else Modifier
                         .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .aspectRatio(16f / 9f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // Ambient Neon Edge Lighting blooming around video sides
+            if (isNeonLightsOn && !isFullscreen) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(2.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    accentColor.copy(alpha = 0.55f),
+                                    accentColor.copy(alpha = 0.20f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
                 )
-                .background(Color.Black)
-                .pointerInput(playbackSpeed) {
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (isFullscreen) Modifier.fillMaxSize()
+                        else Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .aspectRatio(16f / 9f)
+                    )
+                    .background(Color.Black)
+                    .pointerInput(playbackSpeed) {
                     detectTapGestures(
                         onPress = {
                             var isLongPressed = false
@@ -446,7 +480,7 @@ fun ModernPlayerScreen(
                         Icon(
                             imageVector = Icons.Default.FastForward,
                             contentDescription = null,
-                            tint = YtRed,
+                            tint = accentColor,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -521,6 +555,21 @@ fun ModernPlayerScreen(
                                 imageVector = Icons.Default.ClosedCaption,
                                 contentDescription = "Subtitles/CC",
                                 tint = Color.White
+                            )
+                        }
+
+                        // Top-right: Neon Lights toggle (💡)
+                        IconButton(
+                            onClick = {
+                                isNeonLightsOn = !isNeonLightsOn
+                                speedFeedbackText = if (isNeonLightsOn) "Neon Edge Lights ON ✨" else "Neon Edge Lights OFF"
+                            },
+                            modifier = Modifier.testTag("player_neon_lights_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lightbulb,
+                                contentDescription = "Neon Ambient Lights",
+                                tint = if (isNeonLightsOn) accentColor else Color.White
                             )
                         }
 
@@ -665,7 +714,7 @@ fun ModernPlayerScreen(
                                 if (playbackSpeed != 1.0f) {
                                     Text(
                                         text = "${playbackSpeed}x",
-                                        color = YtRed,
+                                        color = accentColor,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -692,8 +741,8 @@ fun ModernPlayerScreen(
                                     try { videoViewRef?.seekTo(target.toInt()) } catch (_: Exception) {}
                                 },
                                 colors = SliderDefaults.colors(
-                                    thumbColor = YtRed,
-                                    activeTrackColor = YtRed,
+                                    thumbColor = accentColor,
+                                    activeTrackColor = accentColor,
                                     inactiveTrackColor = Color(0x66FFFFFF)
                                 ),
                                 modifier = Modifier
@@ -724,7 +773,7 @@ fun ModernPlayerScreen(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xEE1E1E1E))
-                        .border(1.dp, YtRed, RoundedCornerShape(20.dp))
+                        .border(1.dp, accentColor, RoundedCornerShape(20.dp))
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -732,7 +781,7 @@ fun ModernPlayerScreen(
                         Icon(
                             imageVector = Icons.Default.Speed,
                             contentDescription = null,
-                            tint = YtRed,
+                            tint = accentColor,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -890,6 +939,7 @@ fun ModernPlayerScreen(
                 }
             }
         }
+        }
 
         // When fullscreen, don't show the bottom scroll content
         if (!isFullscreen) {
@@ -1001,7 +1051,7 @@ fun ModernPlayerScreen(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(18.dp))
-                                .background(if (video.isSubscribed) YtSurfaceVariant else YtPillActive)
+                                .background(if (video.isSubscribed) YtSurfaceVariant else accentColor)
                                 .clickable { onToggleSubscribe() }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                                 .testTag("player_subscribe_button"),
@@ -1024,7 +1074,7 @@ fun ModernPlayerScreen(
                             } else {
                                 Text(
                                     text = "Subscribe",
-                                    color = YtPillActiveText,
+                                    color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -1061,7 +1111,7 @@ fun ModernPlayerScreen(
                                 Icon(
                                     imageVector = if (video.isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
                                     contentDescription = "Like",
-                                    tint = if (video.isLiked) YtRed else YtTextPrimary,
+                                    tint = if (video.isLiked) accentColor else YtTextPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -1113,7 +1163,36 @@ fun ModernPlayerScreen(
                             onClick = onToggleDownload
                         )
 
-                        // 4. Clip Pill
+                        // 4. Neon Lights Pill
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(if (isNeonLightsOn) accentColor.copy(alpha = 0.25f) else YtSurfaceVariant)
+                                .clickable {
+                                    isNeonLightsOn = !isNeonLightsOn
+                                    speedFeedbackText = if (isNeonLightsOn) "Neon Edge Lights ON ✨" else "Neon Edge Lights OFF"
+                                }
+                                .height(36.dp)
+                                .padding(horizontal = 12.dp)
+                                .testTag("player_neon_pill"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lightbulb,
+                                contentDescription = "Neon Lights",
+                                tint = if (isNeonLightsOn) accentColor else Color.White,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isNeonLightsOn) "Lights ON" else "Lights",
+                                color = if (isNeonLightsOn) accentColor else YtTextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        // 5. Clip Pill
                         PlayerActionButton(
                             icon = Icons.Default.ContentCut,
                             label = "Clip",

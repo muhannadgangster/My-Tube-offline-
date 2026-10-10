@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.LocalUiTheme
 
 /**
@@ -49,8 +50,11 @@ fun YouTubeBottomBar(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    val activeColor = MaterialTheme.colorScheme.onSurface
+    val currentTheme = LocalUiTheme.current
+    val accentColor = LocalAppAccentColor.current
+    val isGlass = currentTheme.contains("Liquid Glass")
+    val surfaceColor = if (isGlass) Color(0xD90F0F0F) else MaterialTheme.colorScheme.surface
+    val activeColor = accentColor
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
