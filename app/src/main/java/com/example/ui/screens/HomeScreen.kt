@@ -290,14 +290,14 @@ fun HomeScreen(
                             }
                         }
 
-                        // 2. INFINITE SCROLL: Chunks of 5 videos, followed by 6-Shorts shelves in endless seamless loop
-                        val videoBlockSize = 5
-                        val virtualCycles = 200
+                        // 2. INFINITE SCROLL: 2 Videos, then 2 Shorts, then 2 Shorts (yani 6 shorts top, then 2 videos, then shorts, etc.), looping seamlessly without end
+                        val virtualCycles = 500
+                        val videoBlockSize = 2 // 2 videos per block as requested: "FIR do niche aur FIR do neeche... yani 6 shorts ho FIR uske niche Jo videos hoti hai FIR uske niche shorts"
                         val videoCount = if (regularVideos.isNotEmpty()) regularVideos.size else 1
-                        val totalVirtualBlocks = (videoCount * virtualCycles) / videoBlockSize
+                        val totalVirtualBlocks = ((videoCount * virtualCycles) / videoBlockSize).coerceAtLeast(50)
 
-                        for (blockIndex in 0 until totalVirtualBlocks.coerceAtLeast(10)) {
-                            // 5 Videos block
+                        for (blockIndex in 0 until totalVirtualBlocks) {
+                            // 2 Videos block
                             items(
                                 count = videoBlockSize,
                                 key = { itemIdx ->
@@ -318,13 +318,13 @@ fun HomeScreen(
                                 )
                             }
 
-                            // Followed by 6 Shorts Shelf (2-column grid: 2, 2, 2)
+                            // Followed by Shorts Shelf (2-column pairs)
                             if (effectiveShorts.isNotEmpty()) {
                                 item(key = "inf_shorts_shelf_after_block_$blockIndex") {
                                     val shelfShorts = generateSequence { effectiveShorts }
                                         .flatten()
                                         .drop((blockIndex + 1) * 6)
-                                        .take(6)
+                                        .take(if (blockIndex % 2 == 0) 4 else 6)
                                         .toList()
                                     HomeShortsShelf(
                                         shortsList = shelfShorts,
