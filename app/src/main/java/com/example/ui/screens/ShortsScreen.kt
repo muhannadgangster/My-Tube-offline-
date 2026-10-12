@@ -89,6 +89,8 @@ import com.example.ui.components.VideoThumbnailView
 import com.example.ui.theme.YtAvatarTeal
 import com.example.ui.theme.YtRed
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.liquidGlassSurface
 import com.example.util.ScalingUtils
 import com.example.util.scaled
 import kotlinx.coroutines.delay
@@ -789,8 +791,9 @@ private fun KenBurnsPhotoSlideshow(
 }
 
 /**
- * Compact, sleek action button for Shorts:
- * - Icon: 24dp sleek pure white vector
+ * Compact, sleek optical action button for Shorts:
+ * - Icon: 24dp sleek vector inside Liquid Glass capsule
+ * - Dimensional specular reflection + optional neon outline
  * - Small compact text label underneath (11sp, SemiBold)
  */
 @Composable
@@ -801,6 +804,8 @@ private fun ShortsActionButton(
     testTag: String,
     onClick: () -> Unit
 ) {
+    val glassConfig = com.example.ui.theme.LocalLiquidGlassConfig.current
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -812,9 +817,21 @@ private fun ShortsActionButton(
     ) {
         Box(
             modifier = Modifier
-                .size(38.dp.scaled())
-                .clip(CircleShape)
-                .background(Color(0x22000000)),
+                .size(42.dp.scaled())
+                .then(
+                    if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                        Modifier.liquidGlassSurface(
+                            shape = CircleShape,
+                            config = glassConfig,
+                            accentColor = tint,
+                            elevation = 4.dp
+                        )
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(Color(0x33000000))
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(

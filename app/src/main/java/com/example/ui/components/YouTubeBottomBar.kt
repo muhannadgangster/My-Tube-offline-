@@ -1,20 +1,27 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.HorizontalDivider
@@ -22,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,10 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
 import com.example.ui.theme.LocalUiTheme
+import com.example.ui.theme.liquidGlassSurface
 
 /**
- * YouTube Navigation Bar exactly matching Screenshot_20261002-122340~3.jpg:
+ * YouTube Navigation Bar with optional Liquid Glass & Sliding Glass Pill Indicator:
  * 1. Home: Outlined house with inner arched doorway + "Home" label
  * 2. Shorts: Authentic YouTube Shorts ribbon outline with inner play triangle + "Shorts" label
  * 3. Plus (+): Solid dark circular button (#272727) with centered thick white plus icon (no label)
@@ -52,15 +62,26 @@ fun YouTubeBottomBar(
 ) {
     val currentTheme = LocalUiTheme.current
     val accentColor = LocalAppAccentColor.current
-    val isGlass = currentTheme.contains("Liquid Glass")
-    val surfaceColor = if (isGlass) Color(0xD90F0F0F) else MaterialTheme.colorScheme.surface
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
     val activeColor = accentColor
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(surfaceColor)
+            .then(
+                if (isGlass) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        config = glassConfig,
+                        accentColor = accentColor,
+                        elevation = 10.dp
+                    )
+                } else {
+                    Modifier.background(MaterialTheme.colorScheme.surface)
+                }
+            )
             .navigationBarsPadding()
     ) {
         // Thin subtle top border divider
@@ -69,112 +90,178 @@ fun YouTubeBottomBar(
             thickness = 0.6.dp
         )
 
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+                .height(52.dp)
         ) {
-            // 1. Home Tab
-            BottomNavItem(
-                icon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_yt_home_outline),
-                        contentDescription = "Home",
-                        tint = if (selectedTab == 0) activeColor else inactiveColor,
-                        modifier = Modifier.size(23.dp)
-                    )
-                },
-                label = "Home",
-                isSelected = selectedTab == 0,
-                testTag = "nav_home",
-                onClick = { onTabSelected(0) }
+            val totalWidth = maxWidth
+            val tabWidth = totalWidth / 5
+
+            // Smooth Sliding Glass Indicator
+            val targetTabIndex = selectedTab.coerceIn(0, 4)
+            val animatedTabFraction by animateFloatAsState(
+                targetValue = targetTabIndex.toFloat(),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                label = "sliding_tab_indicator"
             )
 
-            // 2. Shorts Tab (Official YouTube Shorts outline logo)
-            BottomNavItem(
-                icon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_shorts_logo_outline),
-                        contentDescription = "Shorts",
-                        tint = if (selectedTab == 1) activeColor else inactiveColor,
-                        modifier = Modifier.size(23.dp)
-                    )
-                },
-                label = "Shorts",
-                isSelected = selectedTab == 1,
-                testTag = "nav_shorts",
-                onClick = { onTabSelected(1) }
-            )
-
-            // 3. Center Plus (+) Button (Solid circle with white plus, no text label)
+            // Animated sliding glass pill background behind selected item
             Box(
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onTabSelected(2) }
-                    .testTag("nav_add_plus"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create / Camera",
-                    tint = activeColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // 4. Subscriptions Tab (Official YouTube Subscriptions icon)
-            BottomNavItem(
-                icon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_yt_subscriptions_outline),
-                        contentDescription = "Subscriptions",
-                        tint = if (selectedTab == 3) activeColor else inactiveColor,
-                        modifier = Modifier.size(23.dp)
+                    .offset(x = tabWidth * animatedTabFraction + (tabWidth - 48.dp) / 2)
+                    .width(48.dp)
+                    .height(44.dp)
+                    .align(Alignment.CenterStart)
+                    .then(
+                        if (isGlass) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(12.dp),
+                                config = glassConfig,
+                                accentColor = accentColor,
+                                elevation = 2.dp
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        }
                     )
-                },
-                label = "Subscriptions",
-                isSelected = selectedTab == 3,
-                testTag = "nav_subscriptions",
-                onClick = { onTabSelected(3) }
             )
 
-            // 5. You Tab (Purple circle with bold white "M" + "You" label)
-            BottomNavItem(
-                icon = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. Home Tab
+                BottomNavItem(
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_yt_home_outline),
+                            contentDescription = "Home",
+                            tint = if (selectedTab == 0) activeColor else inactiveColor,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    },
+                    label = "Home",
+                    isSelected = selectedTab == 0,
+                    testTag = "nav_home",
+                    onClick = { onTabSelected(0) },
+                    modifier = Modifier.width(tabWidth)
+                )
+
+                // 2. Shorts Tab (Official YouTube Shorts outline logo)
+                BottomNavItem(
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_shorts_logo_outline),
+                            contentDescription = "Shorts",
+                            tint = if (selectedTab == 1) activeColor else inactiveColor,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    },
+                    label = "Shorts",
+                    isSelected = selectedTab == 1,
+                    testTag = "nav_shorts",
+                    onClick = { onTabSelected(1) },
+                    modifier = Modifier.width(tabWidth)
+                )
+
+                // 3. Center Plus (+) Button (Solid circle with white plus, no text label)
+                Box(
+                    modifier = Modifier
+                        .width(tabWidth)
+                        .height(52.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF8E24AA))
+                            .size(38.dp)
                             .then(
-                                if (selectedTab == 4) {
-                                    Modifier.border(1.5.dp, Color.White, CircleShape)
+                                if (isGlass) {
+                                    Modifier.liquidGlassSurface(
+                                        shape = CircleShape,
+                                        config = glassConfig,
+                                        accentColor = accentColor,
+                                        elevation = 4.dp
+                                    )
                                 } else {
                                     Modifier
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                 }
-                            ),
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onTabSelected(2) }
+                            .testTag("nav_add_plus"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "M",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create / Camera",
+                            tint = activeColor,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                },
-                label = "You",
-                isSelected = selectedTab == 4,
-                testTag = "nav_you",
-                onClick = { onTabSelected(4) }
-            )
+                }
+
+                // 4. Subscriptions Tab (Official YouTube Subscriptions icon)
+                BottomNavItem(
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_yt_subscriptions_outline),
+                            contentDescription = "Subscriptions",
+                            tint = if (selectedTab == 3) activeColor else inactiveColor,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    },
+                    label = "Subscriptions",
+                    isSelected = selectedTab == 3,
+                    testTag = "nav_subscriptions",
+                    onClick = { onTabSelected(3) },
+                    modifier = Modifier.width(tabWidth)
+                )
+
+                // 5. You Tab (Purple circle with bold white "M" + "You" label)
+                BottomNavItem(
+                    icon = {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF8E24AA))
+                                .then(
+                                    if (selectedTab == 4) {
+                                        Modifier.border(1.5.dp, Color.White, CircleShape)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "M",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    },
+                    label = "You",
+                    isSelected = selectedTab == 4,
+                    testTag = "nav_you",
+                    onClick = { onTabSelected(4) },
+                    modifier = Modifier.width(tabWidth)
+                )
+            }
         }
     }
 }
@@ -185,15 +272,16 @@ private fun BottomNavItem(
     label: String,
     isSelected: Boolean,
     testTag: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() }
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .padding(vertical = 2.dp)
             .testTag(testTag),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

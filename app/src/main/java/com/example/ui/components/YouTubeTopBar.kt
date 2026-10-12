@@ -47,7 +47,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
 import com.example.ui.theme.LocalUiTheme
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtAvatarPurple
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtRed
@@ -71,13 +73,24 @@ fun YouTubeTopBar(
 ) {
     val currentTheme = LocalUiTheme.current
     val accentColor = LocalAppAccentColor.current
-    val isGlass = currentTheme.contains("Liquid Glass")
-    val barBackground = if (isGlass) Color(0xD90F0F0F) else MaterialTheme.colorScheme.background
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(barBackground)
+            .then(
+                if (isGlass) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+                        config = glassConfig,
+                        accentColor = accentColor,
+                        elevation = 8.dp
+                    )
+                } else {
+                    Modifier.background(MaterialTheme.colorScheme.background)
+                }
+            )
             .statusBarsPadding()
             .height(56.dp)
             .padding(horizontal = 14.dp),
@@ -89,8 +102,19 @@ fun YouTubeTopBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(42.dp)
-                    .clip(RoundedCornerShape(21.dp))
-                    .background(YtSurfaceVariant)
+                    .then(
+                        if (isGlass) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(21.dp),
+                                config = glassConfig,
+                                elevation = 4.dp
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(21.dp))
+                                .background(YtSurfaceVariant)
+                        }
+                    )
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

@@ -52,6 +52,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
 import com.example.data.local.AppNotificationEntity
+import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiTheme
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtPillActive
@@ -89,16 +93,31 @@ fun NotificationsSheet(
         }
     }
 
+    val glassConfig = LocalLiquidGlassConfig.current
+    val currentTheme = LocalUiTheme.current
+    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = YtDarkBackground,
+        containerColor = if (isGlass) Color.Transparent else YtDarkBackground,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         dragHandle = null
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .then(
+                    if (isGlass) {
+                        Modifier.liquidGlassSurface(
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                            config = glassConfig,
+                            elevation = 10.dp
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
                 .navigationBarsPadding()
                 .testTag("notifications_sheet")
         ) {
@@ -183,15 +202,26 @@ fun NotificationsSheet(
                     val isSelected = selectedFilter == tab
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) YtPillActive else YtPillBackground)
+                            .then(
+                                if (isGlass) {
+                                    Modifier.liquidGlassSurface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        config = glassConfig,
+                                        elevation = if (isSelected) 3.dp else 1.dp
+                                    )
+                                } else {
+                                    Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) YtPillActive else YtPillBackground)
+                                }
+                            )
                             .clickable { selectedFilter = tab }
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                             .testTag("filter_tab_$tab")
                     ) {
                         Text(
                             text = tab,
-                            color = if (isSelected) YtPillActiveText else YtTextPrimary,
+                            color = if (isSelected && !isGlass) YtPillActiveText else YtTextPrimary,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                         )
@@ -275,9 +305,24 @@ private fun NotificationCard(
     matchingVideo: VideoItem?,
     onClick: () -> Unit
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = glassConfig.isEnabled
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .then(
+                if (isGlass) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(12.dp),
+                        config = glassConfig,
+                        elevation = if (!item.isRead) 4.dp else 1.dp
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .testTag("notification_item_${item.id}"),

@@ -55,6 +55,10 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import com.example.data.VideoItem
 import com.example.ui.components.VideoThumbnailView
+import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiTheme
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtAvatarPurple
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
@@ -83,10 +87,15 @@ fun LibraryScreen(
     unreadNotificationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+    val currentTheme = LocalUiTheme.current
+    val appAccent = LocalAppAccentColor.current
+    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(YtDarkBackground)
+            .background(if (isGlass) Color.Transparent else YtDarkBackground)
             .testTag("library_screen_column"),
         contentPadding = PaddingValues(bottom = 90.dp)
     ) {
@@ -103,60 +112,87 @@ fun LibraryScreen(
 
         // Profile Section with Editable Profile (Screenshot 1 & Offline Profile Edit)
         item {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .then(
+                        if (isGlass) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(18.dp),
+                                config = glassConfig,
+                                accentColor = appAccent,
+                                elevation = 6.dp
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
                     .clickable { onEditProfileClick() }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(14.dp)
             ) {
-                // Large Custom Avatar Image or Letter
-                Box(
-                    modifier = Modifier
-                        .size(68.dp)
-                        .clip(CircleShape)
-                        .background(YtAvatarPurple)
-                        .clickable { onEditProfileClick() },
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (!userAvatarUri.isNullOrBlank()) {
-                        AsyncImage(
-                            model = userAvatarUri,
-                            contentDescription = "Profile avatar",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                        )
-                    } else {
+                    // Large Custom Avatar Image or Letter
+                    Box(
+                        modifier = Modifier
+                            .size(68.dp)
+                            .then(
+                                if (isGlass) {
+                                    Modifier.liquidGlassSurface(
+                                        shape = CircleShape,
+                                        config = glassConfig,
+                                        accentColor = appAccent,
+                                        elevation = 3.dp
+                                    )
+                                } else {
+                                    Modifier.clip(CircleShape).background(YtAvatarPurple)
+                                }
+                            )
+                            .clickable { onEditProfileClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!userAvatarUri.isNullOrBlank()) {
+                            AsyncImage(
+                                model = userAvatarUri,
+                                contentDescription = "Profile avatar",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                            )
+                        } else {
+                            Text(
+                                text = userName.take(1).uppercase().ifBlank { "M" },
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 32.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = userName.take(1).uppercase().ifBlank { "M" },
-                            color = Color.White,
+                            text = userName,
+                            color = YtTextPrimary,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = userHandle,
+                            color = YtTextSecondary,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = userName,
-                        color = YtTextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = userHandle,
-                        color = YtTextSecondary,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
             }
         }
@@ -166,7 +202,7 @@ fun LibraryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Edit Profile Button
@@ -174,8 +210,20 @@ fun LibraryScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(YtSurfaceVariant)
+                        .then(
+                            if (isGlass) {
+                                Modifier.liquidGlassSurface(
+                                    shape = RoundedCornerShape(18.dp),
+                                    config = glassConfig,
+                                    accentColor = appAccent,
+                                    elevation = 2.dp
+                                )
+                            } else {
+                                Modifier
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(YtSurfaceVariant)
+                            }
+                        )
                         .clickable { onEditProfileClick() }
                         .testTag("edit_profile_button"),
                     contentAlignment = Alignment.Center
@@ -193,8 +241,20 @@ fun LibraryScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(YtSurfaceVariant)
+                        .then(
+                            if (isGlass) {
+                                Modifier.liquidGlassSurface(
+                                    shape = RoundedCornerShape(18.dp),
+                                    config = glassConfig,
+                                    accentColor = appAccent,
+                                    elevation = 2.dp
+                                )
+                            } else {
+                                Modifier
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(YtSurfaceVariant)
+                            }
+                        )
                         .clickable { onSettingsClick() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -211,8 +271,20 @@ fun LibraryScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(YtSurfaceVariant)
+                        .then(
+                            if (isGlass) {
+                                Modifier.liquidGlassSurface(
+                                    shape = RoundedCornerShape(18.dp),
+                                    config = glassConfig,
+                                    accentColor = appAccent,
+                                    elevation = 2.dp
+                                )
+                            } else {
+                                Modifier
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(YtSurfaceVariant)
+                            }
+                        )
                         .clickable { },
                     contentAlignment = Alignment.Center
                 ) {
@@ -435,19 +507,33 @@ private fun LibraryItemRow(
     testTag: String,
     onClick: () -> Unit
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = glassConfig.isEnabled
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape)
-                .background(YtSurfaceVariant),
+                .then(
+                    if (isGlass) {
+                        Modifier.liquidGlassSurface(
+                            shape = CircleShape,
+                            config = glassConfig,
+                            elevation = 2.dp
+                        )
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(YtSurfaceVariant)
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -491,7 +577,7 @@ private fun LibraryItemRow(
  *   1. Notification Bell
  *   2. Search Icon
  *   3. Settings Gear Icon
- * - Pure Dark theme background (#000000)
+ * - Pure Dark theme background (#000000) or Liquid Glass
  */
 @Composable
 fun YouTabHeader(
@@ -502,11 +588,24 @@ fun YouTabHeader(
     unreadNotificationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = glassConfig.isEnabled
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .background(Color(0xFF000000))
+            .then(
+                if (isGlass) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+                        config = glassConfig,
+                        elevation = 6.dp
+                    )
+                } else {
+                    Modifier.background(Color(0xFF000000))
+                }
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("you_tab_header"),
         verticalAlignment = Alignment.CenterVertically,
@@ -516,8 +615,19 @@ fun YouTabHeader(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFF272727))
+                .then(
+                    if (isGlass) {
+                        Modifier.liquidGlassSurface(
+                            shape = RoundedCornerShape(18.dp),
+                            config = glassConfig,
+                            elevation = 2.dp
+                        )
+                    } else {
+                        Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color(0xFF272727))
+                    }
+                )
                 .clickable { onAccountClick() }
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .testTag("you_accounts_pill")

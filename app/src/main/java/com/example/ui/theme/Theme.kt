@@ -169,6 +169,7 @@ fun MyApplicationTheme(
     darkTheme: Boolean = (uiTheme != "Light Mode" && uiTheme != "Liquid Glass (Light)"),
     dynamicColor: Boolean = false,
     customAccentColorHex: Long? = null,
+    liquidGlassConfig: LiquidGlassStyleConfig = LiquidGlassStyleConfig(),
     content: @Composable () -> Unit
 ) {
     val currentDensity = LocalDensity.current
@@ -183,11 +184,13 @@ fun MyApplicationTheme(
         YtRed
     }
 
-    val baseColorScheme = when (uiTheme) {
-        "Light Mode" -> YouTubeLightColorScheme
-        "Liquid Glass (Dark)" -> LiquidGlassDarkColorScheme
-        "Liquid Glass (Light)" -> LiquidGlassLightColorScheme
-        "Liquid Glass with Reflection" -> LiquidGlassReflectColorScheme
+    val isGlassTheme = uiTheme.contains("Liquid Glass") || liquidGlassConfig.isEnabled
+
+    val baseColorScheme = when {
+        uiTheme == "Light Mode" -> YouTubeLightColorScheme
+        uiTheme == "Liquid Glass (Light)" -> LiquidGlassLightColorScheme
+        uiTheme == "Liquid Glass (Dark)" -> LiquidGlassDarkColorScheme
+        isGlassTheme -> LiquidGlassReflectColorScheme
         else -> YouTubeDarkColorScheme
     }
 
@@ -198,7 +201,11 @@ fun MyApplicationTheme(
     CompositionLocalProvider(
         LocalDensity provides adaptiveDensity,
         LocalUiTheme provides uiTheme,
-        LocalAppAccentColor provides activeAccentColor
+        LocalAppAccentColor provides activeAccentColor,
+        LocalLiquidGlassConfig provides liquidGlassConfig.copy(
+            isEnabled = liquidGlassConfig.isEnabled && (isGlassTheme || liquidGlassConfig.isEnabled),
+            isDarkGlass = uiTheme != "Liquid Glass (Light)" && uiTheme != "Light Mode"
+        )
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

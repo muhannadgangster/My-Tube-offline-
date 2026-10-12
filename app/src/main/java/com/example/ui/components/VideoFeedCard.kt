@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiTheme
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtAvatarIndigo
 import com.example.ui.theme.YtAvatarOrange
 import com.example.ui.theme.YtAvatarPurple
@@ -72,11 +75,27 @@ fun VideoFeedCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
+    val currentTheme = LocalUiTheme.current
+    val glassConfig = LocalLiquidGlassConfig.current
+    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .then(
+                if (isGlass) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(16.dp),
+                        config = glassConfig,
+                        elevation = 4.dp
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clickable { onClick() }
-            .padding(bottom = 16.dp)
+            .padding(vertical = 10.dp)
             .testTag("video_feed_card_${video.id}")
     ) {
         // 16:9 Thumbnail container

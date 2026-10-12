@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtRed
 import com.example.ui.theme.YtSurfaceDark
 import com.example.ui.theme.YtTextPrimary
@@ -57,11 +59,22 @@ fun HomeShortsShelf(
 ) {
     if (shortsList.isEmpty()) return
     val accentColor = LocalAppAccentColor.current
+    val glassConfig = LocalLiquidGlassConfig.current
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0x33000000))
+            .then(
+                if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(16.dp),
+                        config = glassConfig,
+                        elevation = 4.dp
+                    )
+                } else {
+                    Modifier.background(Color(0x33000000))
+                }
+            )
             .padding(vertical = 12.dp)
             .testTag("home_shorts_shelf")
     ) {
@@ -142,11 +155,24 @@ private fun ShortGridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+
     Box(
         modifier = modifier
             .aspectRatio(9f / 16f)
-            .clip(RoundedCornerShape(12.dp))
-            .background(YtSurfaceDark)
+            .then(
+                if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(14.dp),
+                        config = glassConfig,
+                        elevation = 4.dp
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(YtSurfaceDark)
+                }
+            )
             .clickable { onClick() }
             .testTag("short_card_${short.id}")
     ) {

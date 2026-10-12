@@ -74,9 +74,42 @@ class MainActivity : ComponentActivity() {
             val viewModel: YouTubeViewModel = viewModel()
             val uiTheme by viewModel.settingsManager.uiTheme.collectAsStateWithLifecycle()
             val customAccentColorHex by viewModel.settingsManager.customAccentColorHex.collectAsStateWithLifecycle()
+
+            // Liquid Glass & Neon config state collection
+            val lgMaster by viewModel.settingsManager.liquidGlassMaster.collectAsStateWithLifecycle()
+            val lgIntensity by viewModel.settingsManager.liquidGlassIntensity.collectAsStateWithLifecycle()
+            val lgBlur by viewModel.settingsManager.liquidGlassBlur.collectAsStateWithLifecycle()
+            val lgTransparency by viewModel.settingsManager.liquidGlassTransparency.collectAsStateWithLifecycle()
+            val lgRefraction by viewModel.settingsManager.liquidGlassRefraction.collectAsStateWithLifecycle()
+            val lgSpecular by viewModel.settingsManager.liquidGlassSpecular.collectAsStateWithLifecycle()
+            val lgBorderThickness by viewModel.settingsManager.liquidGlassBorderThickness.collectAsStateWithLifecycle()
+
+            val neonMaster by viewModel.settingsManager.neonLightsMaster.collectAsStateWithLifecycle()
+            val neonColorHex by viewModel.settingsManager.neonColorHex.collectAsStateWithLifecycle()
+            val neonIntensity by viewModel.settingsManager.neonIntensity.collectAsStateWithLifecycle()
+            val neonAnimated by viewModel.settingsManager.neonAnimated.collectAsStateWithLifecycle()
+            val neonSpeed by viewModel.settingsManager.neonAnimationSpeed.collectAsStateWithLifecycle()
+
+            val glassConfig = com.example.ui.theme.LiquidGlassStyleConfig(
+                isEnabled = lgMaster,
+                glassIntensity = lgIntensity,
+                blurRadius = lgBlur,
+                transparency = lgTransparency,
+                refractionIntensity = lgRefraction,
+                specularHighlight = lgSpecular,
+                borderThicknessDp = lgBorderThickness,
+                isDarkGlass = uiTheme != "Liquid Glass (Light)" && uiTheme != "Light Mode",
+                neonEnabled = neonMaster,
+                neonColorHex = neonColorHex,
+                neonIntensity = neonIntensity,
+                neonAnimated = neonAnimated,
+                neonAnimationSpeed = neonSpeed
+            )
+
             MyApplicationTheme(
                 uiTheme = uiTheme,
-                customAccentColorHex = customAccentColorHex
+                customAccentColorHex = customAccentColorHex,
+                liquidGlassConfig = glassConfig
             ) {
                 MyTubeApp(viewModel = viewModel)
             }

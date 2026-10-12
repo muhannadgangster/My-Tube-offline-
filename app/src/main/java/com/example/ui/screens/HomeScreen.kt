@@ -50,6 +50,8 @@ import com.example.ui.components.HomeShortsShelf
 import com.example.ui.components.VideoFeedCard
 import com.example.ui.components.VideoThumbnailView
 import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
 import com.example.ui.theme.YtPillActive
@@ -83,6 +85,7 @@ fun HomeScreen(
     val filterChips = listOf("All", "Videos", "Shorts", "Downloaded", "Favorites")
 
     val appAccentColor = LocalAppAccentColor.current
+    val glassConfig = LocalLiquidGlassConfig.current
 
     Column(
         modifier = modifier
@@ -101,8 +104,19 @@ fun HomeScreen(
             // Explore Compass Pill
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(YtSurfaceVariant)
+                    .then(
+                        if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(12.dp),
+                                config = glassConfig,
+                                elevation = 3.dp
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(YtSurfaceVariant)
+                        }
+                    )
                     .clickable { onFilterSelected("All") }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .testTag("filter_chip_explore"),
@@ -119,8 +133,20 @@ fun HomeScreen(
             // Quick Mix / Shuffle Chip (Har refresh / mix par videos nayi tarteeb se mix hon)
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(YtSurfaceVariant)
+                    .then(
+                        if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(12.dp),
+                                config = glassConfig,
+                                accentColor = appAccentColor,
+                                elevation = 3.dp
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(YtSurfaceVariant)
+                        }
+                    )
                     .clickable { onRefresh() }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .testTag("filter_chip_mix_shuffle"),
@@ -147,8 +173,20 @@ fun HomeScreen(
                 val isSelected = selectedFilter == chip
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) YtPillActive else YtPillBackground)
+                        .then(
+                            if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                                Modifier.liquidGlassSurface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    config = glassConfig,
+                                    accentColor = if (isSelected) appAccentColor else Color.White,
+                                    elevation = if (isSelected) 5.dp else 2.dp
+                                )
+                            } else {
+                                Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) YtPillActive else YtPillBackground)
+                            }
+                        )
                         .clickable { onFilterSelected(chip) }
                         .padding(horizontal = 14.dp, vertical = 6.dp)
                         .testTag("filter_chip_$chip"),
@@ -156,7 +194,7 @@ fun HomeScreen(
                 ) {
                     Text(
                         text = chip,
-                        color = if (isSelected) YtPillActiveText else YtTextPrimary,
+                        color = if (isSelected && !glassConfig.isEnabled) YtPillActiveText else YtTextPrimary,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     )

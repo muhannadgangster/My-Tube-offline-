@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,6 +75,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -148,6 +150,31 @@ fun SettingsScreen(
     val customBackgroundUri by settingsManager.customBackgroundUri.collectAsStateWithLifecycle()
     val customBackgroundDim by settingsManager.customBackgroundDim.collectAsStateWithLifecycle()
     val ambientNeonLighting by settingsManager.ambientNeonLighting.collectAsStateWithLifecycle()
+
+    // Liquid Glass state collections
+    val lgMaster by settingsManager.liquidGlassMaster.collectAsStateWithLifecycle()
+    val lgIntensity by settingsManager.liquidGlassIntensity.collectAsStateWithLifecycle()
+    val lgBlur by settingsManager.liquidGlassBlur.collectAsStateWithLifecycle()
+    val lgTransparency by settingsManager.liquidGlassTransparency.collectAsStateWithLifecycle()
+    val lgRefraction by settingsManager.liquidGlassRefraction.collectAsStateWithLifecycle()
+    val lgSpecular by settingsManager.liquidGlassSpecular.collectAsStateWithLifecycle()
+    val lgBorderThickness by settingsManager.liquidGlassBorderThickness.collectAsStateWithLifecycle()
+
+    // Neon Lights state collections
+    val neonMaster by settingsManager.neonLightsMaster.collectAsStateWithLifecycle()
+    val neonColorHex by settingsManager.neonColorHex.collectAsStateWithLifecycle()
+    val neonIntensity by settingsManager.neonIntensity.collectAsStateWithLifecycle()
+    val neonAnimated by settingsManager.neonAnimated.collectAsStateWithLifecycle()
+    val neonSpeed by settingsManager.neonAnimationSpeed.collectAsStateWithLifecycle()
+
+    // Layout states
+    val showHomeTopShorts by settingsManager.showHomeTopShorts.collectAsStateWithLifecycle()
+    val showShortsActionRemix by settingsManager.showShortsActionRemix.collectAsStateWithLifecycle()
+    val showShortsActionSave by settingsManager.showShortsActionSave.collectAsStateWithLifecycle()
+    val playerControlsSize by settingsManager.playerControlsSize.collectAsStateWithLifecycle()
+    val iconStyleMode by settingsManager.iconStyleMode.collectAsStateWithLifecycle()
+
+    var showRestartDialog by remember { mutableStateOf(false) }
 
     // Photo Picker Launcher with persistent file copying (Guaranteed to persist across app closes)
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -457,74 +484,321 @@ fun SettingsScreen(
                 }
             }
 
-            // 3. Liquid Glass UI Mode
-            val isLiquidGlassActive = uiTheme.contains("Liquid Glass")
+            // ==========================================
+            // 3. FULL-APP LIQUID GLASS ENGINE CONTROLS
+            // ==========================================
+            item { SettingsSectionHeader("Liquid Glass Engine (iOS Glassmorphism)") }
+
             item {
                 SettingsSwitchRow(
-                    title = "Liquid Glass Effect",
-                    subtitle = if (isLiquidGlassActive) "Liquid Glass frosted effect & reflective highlights (Active)" else "Standard YouTube flat theme (Off)",
-                    checked = isLiquidGlassActive,
+                    title = "Master Liquid Glass Engine",
+                    subtitle = if (lgMaster) "Translucent glass surfaces, specular bevels & reflections (Active)" else "Standard YouTube flat theme (Off)",
+                    checked = lgMaster,
                     onCheckedChange = { isEnabled ->
-                        if (isEnabled) {
-                            settingsManager.setUiTheme("Liquid Glass with Reflection")
-                        } else {
-                            settingsManager.setUiTheme("Dark Mode")
-                        }
+                        settingsManager.setLiquidGlassMaster(isEnabled)
+                        showRestartDialog = true
                     }
                 )
             }
 
-            // 4. Ambient Neon Edge Lights on Videos
+            if (lgMaster) {
+                // Glass Intensity Slider
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Glass Depth & Opacity", color = YtTextPrimary, fontSize = 14.sp)
+                            Text("${(lgIntensity * 100).toInt()}%", color = Color(customAccentColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(
+                            value = lgIntensity,
+                            onValueChange = { settingsManager.setLiquidGlassIntensity(it) },
+                            valueRange = 0.2f..1.0f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(customAccentColorHex),
+                                activeTrackColor = Color(customAccentColorHex)
+                            )
+                        )
+                    }
+                }
+
+                // Refraction / Optical Caustics Slider
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Refraction & Edge Dispersion", color = YtTextPrimary, fontSize = 14.sp)
+                            Text("${(lgRefraction * 100).toInt()}%", color = Color(customAccentColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(
+                            value = lgRefraction,
+                            onValueChange = { settingsManager.setLiquidGlassRefraction(it) },
+                            valueRange = 0.1f..1.0f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(customAccentColorHex),
+                                activeTrackColor = Color(customAccentColorHex)
+                            )
+                        )
+                    }
+                }
+
+                // Transparency Slider
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Transparency Level", color = YtTextPrimary, fontSize = 14.sp)
+                            Text("${(lgTransparency * 100).toInt()}%", color = Color(customAccentColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(
+                            value = lgTransparency,
+                            onValueChange = { settingsManager.setLiquidGlassTransparency(it) },
+                            valueRange = 0.3f..0.95f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(customAccentColorHex),
+                                activeTrackColor = Color(customAccentColorHex)
+                            )
+                        )
+                    }
+                }
+
+                // Specular highlight toggle
+                item {
+                    SettingsSwitchRow(
+                        title = "Specular Bevel Highlights",
+                        subtitle = "Curved optical lens reflections on top and left borders",
+                        checked = lgSpecular,
+                        onCheckedChange = { settingsManager.setLiquidGlassSpecular(it) }
+                    )
+                }
+
+                // Border Thickness Slider
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Luminous Border Thickness", color = YtTextPrimary, fontSize = 14.sp)
+                            Text("${String.format("%.1f", lgBorderThickness)} dp", color = Color(customAccentColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(
+                            value = lgBorderThickness,
+                            onValueChange = { settingsManager.setLiquidGlassBorderThickness(it) },
+                            valueRange = 0.6f..3.0f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(customAccentColorHex),
+                                activeTrackColor = Color(customAccentColorHex)
+                            )
+                        )
+                    }
+                }
+            }
+
+            // ==========================================
+            // 4. NEON LIGHTS SYSTEM CONTROLS
+            // ==========================================
+            item { SettingsSectionHeader("Neon Lights & Glowing Accents") }
+
             item {
                 SettingsSwitchRow(
-                    title = "Ambient Neon Lights on Videos",
-                    subtitle = if (ambientNeonLighting) "Edge glow reflection blooming around video player (Active)" else "Standard player edges without glow (Off)",
-                    checked = ambientNeonLighting,
-                    onCheckedChange = { settingsManager.setAmbientNeonLighting(it) }
+                    title = "Master Neon Lights System",
+                    subtitle = if (neonMaster) "Radiant neon outlines, button halos & ambient edge lighting (Active)" else "Standard subdued lighting (Off)",
+                    checked = neonMaster,
+                    onCheckedChange = { settingsManager.setNeonLightsMaster(it) }
                 )
+            }
+
+            if (neonMaster) {
+                // Neon Color Palette Selection
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Text("Neon Light Color", color = YtTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val neonColors = listOf(
+                            "Cyan" to 0xFF00E5FFL,
+                            "Magenta" to 0xFFFF007FL,
+                            "Lime" to 0xFF00E676L,
+                            "Purple" to 0xFFD500F9L,
+                            "Amber" to 0xFFFFD600L,
+                            "Flame" to 0xFFFF3D00L,
+                            "Blue" to 0xFF2979FFL
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            neonColors.forEach { (name, hex) ->
+                                val isSelected = neonColorHex == hex
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(hex))
+                                        .border(
+                                            width = if (isSelected) 3.dp else 1.dp,
+                                            color = if (isSelected) Color.White else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { settingsManager.setNeonColorHex(hex) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Neon Intensity
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Neon Glow Intensity", color = YtTextPrimary, fontSize = 14.sp)
+                            Text("${(neonIntensity * 100).toInt()}%", color = Color(neonColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(
+                            value = neonIntensity,
+                            onValueChange = { settingsManager.setNeonIntensity(it) },
+                            valueRange = 0.2f..1.0f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(neonColorHex),
+                                activeTrackColor = Color(neonColorHex)
+                            )
+                        )
+                    }
+                }
+
+                // Neon Animated Mode
+                item {
+                    SettingsSwitchRow(
+                        title = "Animated Pulsing Neon",
+                        subtitle = "Dynamic luminous light sweeps and pulsing edge halos",
+                        checked = neonAnimated,
+                        onCheckedChange = { settingsManager.setNeonAnimated(it) }
+                    )
+                }
+            }
+
+            // ==========================================
+            // 5. CUSTOMIZE APP & INTERFACE STUDIO
+            // ==========================================
+            item { SettingsSectionHeader("Customize Interface & Layout Studio") }
+
+            item {
+                SettingsSwitchRow(
+                    title = "Home Top Shorts Shelf",
+                    subtitle = if (showHomeTopShorts) "Display 6-Shorts shelf at top of home feed" else "Start immediately with regular video cards",
+                    checked = showHomeTopShorts,
+                    onCheckedChange = { settingsManager.setShowHomeTopShorts(it) }
+                )
+            }
+
+            item {
+                SettingsSwitchRow(
+                    title = "Shorts Action: Remix Button",
+                    subtitle = "Show Remix / Audio creation button in vertical Shorts toolbar",
+                    checked = showShortsActionRemix,
+                    onCheckedChange = { settingsManager.setShowShortsActionRemix(it) }
+                )
+            }
+
+            item {
+                SettingsSwitchRow(
+                    title = "Shorts Action: Save / Bookmark Button",
+                    subtitle = "Show Bookmark / Save button in vertical Shorts toolbar",
+                    checked = showShortsActionSave,
+                    onCheckedChange = { settingsManager.setShowShortsActionSave(it) }
+                )
+            }
+
+            // Player controls size scaling
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Video Player Controls Scale", color = YtTextPrimary, fontSize = 14.sp)
+                        Text("${(playerControlsSize * 100).toInt()}%", color = Color(customAccentColorHex), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Slider(
+                        value = playerControlsSize,
+                        onValueChange = { settingsManager.setPlayerControlsSize(it) },
+                        valueRange = 0.8f..1.4f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color(customAccentColorHex),
+                            activeTrackColor = Color(customAccentColorHex)
+                        )
+                    )
+                }
+            }
+
+            // Reset All Appearance Button
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            settingsManager.resetAllAppearance()
+                            showNoticeMessage = "Appearance restored to factory defaults!"
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF))
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Reset All Appearance to Default", fontSize = 13.sp)
+                    }
+                }
             }
 
             item { HorizontalDivider(color = YtBorder, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 8.dp)) }
-
-            // Section 1: General
-            item { SettingsSectionHeader("General") }
-
-            item {
-                SettingsSwitchRow(
-                    title = "Remind me to take a break",
-                    subtitle = if (remindBreak) "Every $breakIntervalMinutes minutes" else "Off",
-                    checked = remindBreak,
-                    onCheckedChange = {
-                        settingsManager.setRemindBreak(it)
-                        if (it) showBreakDialog = true
-                    }
-                )
-            }
-
-            item {
-                SettingsSwitchRow(
-                    title = "Remind me when it's bedtime",
-                    subtitle = if (remindBedtime) "${bedtimeHour % 12}:00 ${if (bedtimeHour >= 12) "PM" else "AM"}" else "Off",
-                    checked = remindBedtime,
-                    onCheckedChange = { settingsManager.setRemindBedtime(it) }
-                )
-            }
-
-            val isLiquidGlassOn = uiTheme.contains("Liquid Glass")
-            item {
-                SettingsSwitchRow(
-                    title = "Liquid Glass UI Mode",
-                    subtitle = if (isLiquidGlassOn) "Liquid Glass frosted effect & reflective highlights (Active)" else "Standard YouTube flat theme (Off)",
-                    checked = isLiquidGlassOn,
-                    onCheckedChange = { isEnabled ->
-                        if (isEnabled) {
-                            settingsManager.setUiTheme("Liquid Glass with Reflection")
-                        } else {
-                            settingsManager.setUiTheme("Dark Mode")
-                        }
-                    }
-                )
-            }
 
             item {
                 SettingsClickableRow(
@@ -1050,6 +1324,47 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showTermsDialog = false }) {
                     Text("Close", color = YtBlue)
+                }
+            }
+        )
+    }
+
+    // Safe Restart App Confirmation Dialog
+    if (showRestartDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestartDialog = false },
+            containerColor = YtSurfaceDark,
+            title = { Text("Restart MyTube?", color = YtTextPrimary, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Your appearance settings have been saved persistently. Would you like to restart MyTube now to apply the complete Liquid Glass interface across all screens?",
+                    color = YtTextSecondary,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRestartDialog = false
+                        try {
+                            val packageManager = context.packageManager
+                            val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                            val componentName = intent?.component
+                            val restartIntent = Intent.makeRestartActivityTask(componentName)
+                            context.startActivity(restartIntent)
+                            Runtime.getRuntime().exit(0)
+                        } catch (e: Exception) {
+                            showNoticeMessage = "Settings saved! Liquid Glass will be fully applied on your next startup."
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = YtBlue)
+                ) {
+                    Text("Restart Now", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestartDialog = false }) {
+                    Text("Later", color = YtTextSecondary)
                 }
             }
         )

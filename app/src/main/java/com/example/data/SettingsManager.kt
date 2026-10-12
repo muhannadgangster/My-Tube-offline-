@@ -60,6 +60,7 @@ class SettingsManager(context: Context) {
 
         val ACCENT_COLOR_OPTIONS = listOf(
             "YouTube Red" to 0xFFFF0033L,
+            "Maro / Maroon" to 0xFF800000L,
             "Crimson Neon" to 0xFFFF1744L,
             "Electric Cyan" to 0xFF00E5FFL,
             "Vibrant Emerald" to 0xFF00E676L,
@@ -384,5 +385,175 @@ class SettingsManager(context: Context) {
     fun clearSearchHistory() {
         _searchHistory.value = emptyList()
         prefs.edit().remove("search_history_items").apply()
+    }
+
+    // ==========================================
+    // LIQUID GLASS & NEON CUSTOMIZATION SYSTEM
+    // ==========================================
+    private val _liquidGlassMaster = MutableStateFlow(prefs.getBoolean("lg_master_enabled", true))
+    val liquidGlassMaster: StateFlow<Boolean> = _liquidGlassMaster.asStateFlow()
+
+    private val _liquidGlassIntensity = MutableStateFlow(prefs.getFloat("lg_intensity", 0.85f))
+    val liquidGlassIntensity: StateFlow<Float> = _liquidGlassIntensity.asStateFlow()
+
+    private val _liquidGlassBlur = MutableStateFlow(prefs.getFloat("lg_blur", 24f))
+    val liquidGlassBlur: StateFlow<Float> = _liquidGlassBlur.asStateFlow()
+
+    private val _liquidGlassTransparency = MutableStateFlow(prefs.getFloat("lg_transparency", 0.70f))
+    val liquidGlassTransparency: StateFlow<Float> = _liquidGlassTransparency.asStateFlow()
+
+    private val _liquidGlassRefraction = MutableStateFlow(prefs.getFloat("lg_refraction", 0.65f))
+    val liquidGlassRefraction: StateFlow<Float> = _liquidGlassRefraction.asStateFlow()
+
+    private val _liquidGlassSpecular = MutableStateFlow(prefs.getBoolean("lg_specular", true))
+    val liquidGlassSpecular: StateFlow<Boolean> = _liquidGlassSpecular.asStateFlow()
+
+    private val _liquidGlassBorderThickness = MutableStateFlow(prefs.getFloat("lg_border_thickness", 1.0f))
+    val liquidGlassBorderThickness: StateFlow<Float> = _liquidGlassBorderThickness.asStateFlow()
+
+    // Neon Lights system
+    private val _neonLightsMaster = MutableStateFlow(prefs.getBoolean("neon_master_enabled", false))
+    val neonLightsMaster: StateFlow<Boolean> = _neonLightsMaster.asStateFlow()
+
+    private val _neonColorHex = MutableStateFlow(prefs.getLong("neon_color_hex", 0xFF00E5FFL)) // Electric Cyan
+    val neonColorHex: StateFlow<Long> = _neonColorHex.asStateFlow()
+
+    private val _neonIntensity = MutableStateFlow(prefs.getFloat("neon_intensity", 0.85f))
+    val neonIntensity: StateFlow<Float> = _neonIntensity.asStateFlow()
+
+    private val _neonAnimated = MutableStateFlow(prefs.getBoolean("neon_animated", false))
+    val neonAnimated: StateFlow<Boolean> = _neonAnimated.asStateFlow()
+
+    private val _neonAnimationSpeed = MutableStateFlow(prefs.getFloat("neon_speed", 1.0f))
+    val neonAnimationSpeed: StateFlow<Float> = _neonAnimationSpeed.asStateFlow()
+
+    // Layout custom visibility & icon arrangement
+    private val _showHomeTopShorts = MutableStateFlow(prefs.getBoolean("layout_show_home_shorts", true))
+    val showHomeTopShorts: StateFlow<Boolean> = _showHomeTopShorts.asStateFlow()
+
+    private val _showShortsActionRemix = MutableStateFlow(prefs.getBoolean("layout_shorts_remix", true))
+    val showShortsActionRemix: StateFlow<Boolean> = _showShortsActionRemix.asStateFlow()
+
+    private val _showShortsActionSave = MutableStateFlow(prefs.getBoolean("layout_shorts_save", true))
+    val showShortsActionSave: StateFlow<Boolean> = _showShortsActionSave.asStateFlow()
+
+    private val _playerControlsSize = MutableStateFlow(prefs.getFloat("layout_player_controls_size", 1.0f)) // 0.8 .. 1.4 scale
+    val playerControlsSize: StateFlow<Float> = _playerControlsSize.asStateFlow()
+
+    private val _iconStyleMode = MutableStateFlow(prefs.getString("layout_icon_style", "Glass") ?: "Glass") // Glass, Glow, Standard
+    val iconStyleMode: StateFlow<String> = _iconStyleMode.asStateFlow()
+
+    fun setLiquidGlassMaster(enabled: Boolean) {
+        _liquidGlassMaster.value = enabled
+        prefs.edit().putBoolean("lg_master_enabled", enabled).apply()
+        if (enabled && !_uiTheme.value.contains("Liquid Glass")) {
+            setUiTheme("Liquid Glass with Reflection")
+        } else if (!enabled && _uiTheme.value.contains("Liquid Glass")) {
+            setUiTheme("Dark Mode")
+        }
+    }
+
+    fun setLiquidGlassIntensity(v: Float) {
+        _liquidGlassIntensity.value = v
+        prefs.edit().putFloat("lg_intensity", v).apply()
+    }
+
+    fun setLiquidGlassBlur(v: Float) {
+        _liquidGlassBlur.value = v
+        prefs.edit().putFloat("lg_blur", v).apply()
+    }
+
+    fun setLiquidGlassTransparency(v: Float) {
+        _liquidGlassTransparency.value = v
+        prefs.edit().putFloat("lg_transparency", v).apply()
+    }
+
+    fun setLiquidGlassRefraction(v: Float) {
+        _liquidGlassRefraction.value = v
+        prefs.edit().putFloat("lg_refraction", v).apply()
+    }
+
+    fun setLiquidGlassSpecular(v: Boolean) {
+        _liquidGlassSpecular.value = v
+        prefs.edit().putBoolean("lg_specular", v).apply()
+    }
+
+    fun setLiquidGlassBorderThickness(v: Float) {
+        _liquidGlassBorderThickness.value = v
+        prefs.edit().putFloat("lg_border_thickness", v).apply()
+    }
+
+    fun setNeonLightsMaster(enabled: Boolean) {
+        _neonLightsMaster.value = enabled
+        prefs.edit().putBoolean("neon_master_enabled", enabled).apply()
+    }
+
+    fun setNeonColorHex(colorLong: Long) {
+        _neonColorHex.value = colorLong
+        prefs.edit().putLong("neon_color_hex", colorLong).apply()
+    }
+
+    fun setNeonIntensity(v: Float) {
+        _neonIntensity.value = v
+        prefs.edit().putFloat("neon_intensity", v).apply()
+    }
+
+    fun setNeonAnimated(v: Boolean) {
+        _neonAnimated.value = v
+        prefs.edit().putBoolean("neon_animated", v).apply()
+    }
+
+    fun setNeonAnimationSpeed(v: Float) {
+        _neonAnimationSpeed.value = v
+        prefs.edit().putFloat("neon_speed", v).apply()
+    }
+
+    fun setShowHomeTopShorts(v: Boolean) {
+        _showHomeTopShorts.value = v
+        prefs.edit().putBoolean("layout_show_home_shorts", v).apply()
+    }
+
+    fun setShowShortsActionRemix(v: Boolean) {
+        _showShortsActionRemix.value = v
+        prefs.edit().putBoolean("layout_shorts_remix", v).apply()
+    }
+
+    fun setShowShortsActionSave(v: Boolean) {
+        _showShortsActionSave.value = v
+        prefs.edit().putBoolean("layout_shorts_save", v).apply()
+    }
+
+    fun setPlayerControlsSize(scale: Float) {
+        _playerControlsSize.value = scale
+        prefs.edit().putFloat("layout_player_controls_size", scale).apply()
+    }
+
+    fun setIconStyleMode(mode: String) {
+        _iconStyleMode.value = mode
+        prefs.edit().putString("layout_icon_style", mode).apply()
+    }
+
+    fun resetAllAppearance() {
+        setLiquidGlassMaster(true)
+        setLiquidGlassIntensity(0.85f)
+        setLiquidGlassBlur(24f)
+        setLiquidGlassTransparency(0.70f)
+        setLiquidGlassRefraction(0.65f)
+        setLiquidGlassSpecular(true)
+        setLiquidGlassBorderThickness(1.0f)
+        setNeonLightsMaster(false)
+        setNeonColorHex(0xFF00E5FFL)
+        setNeonIntensity(0.85f)
+        setNeonAnimated(false)
+        setNeonAnimationSpeed(1.0f)
+        setCustomAccentColorHex(0xFFFF0033L)
+        setCustomBackgroundUri(null)
+        setCustomBackgroundDim(0.75f)
+        setUiTheme("Liquid Glass with Reflection")
+        setShowHomeTopShorts(true)
+        setShowShortsActionRemix(true)
+        setShowShortsActionSave(true)
+        setPlayerControlsSize(1.0f)
+        setIconStyleMode("Glass")
     }
 }

@@ -108,6 +108,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.VideoItem
 import com.example.ui.components.VideoThumbnailView
 import com.example.ui.theme.YtAvatarPurple
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalAppAccentColor
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtAvatarTeal
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtDarkBackground
@@ -1094,10 +1097,23 @@ fun ModernPlayerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 1. Combined Like / Dislike Pill (Screenshot 2)
+                        val glassConfig = LocalLiquidGlassConfig.current
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(YtSurfaceVariant)
+                                .then(
+                                    if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                                        Modifier.liquidGlassSurface(
+                                            shape = RoundedCornerShape(18.dp),
+                                            config = glassConfig,
+                                            accentColor = if (video.isLiked) accentColor else Color.White,
+                                            elevation = 4.dp
+                                        )
+                                    } else {
+                                        Modifier
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(YtSurfaceVariant)
+                                    }
+                                )
                                 .height(36.dp)
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -1551,10 +1567,25 @@ private fun PlayerActionButton(
     active: Boolean = false,
     onClick: () -> Unit
 ) {
+    val glassConfig = LocalLiquidGlassConfig.current
+    val accentColor = LocalAppAccentColor.current
+
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(if (active) Color(0xFF383838) else YtSurfaceVariant)
+            .then(
+                if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                    Modifier.liquidGlassSurface(
+                        shape = RoundedCornerShape(18.dp),
+                        config = glassConfig,
+                        accentColor = if (active) accentColor else Color.White,
+                        elevation = 4.dp
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (active) Color(0xFF383838) else YtSurfaceVariant)
+                }
+            )
             .height(36.dp)
             .clickable { onClick() }
             .padding(horizontal = 14.dp)
@@ -1564,7 +1595,7 @@ private fun PlayerActionButton(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (active) YtRed else YtTextPrimary,
+            tint = if (active) accentColor else YtTextPrimary,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
