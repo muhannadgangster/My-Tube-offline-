@@ -53,6 +53,7 @@ import com.example.ui.components.RenameTitleDialog
 import com.example.ui.components.YouTubeBottomBar
 import com.example.ui.components.YouTubeSplashScreen
 import com.example.ui.components.YouTubeTopBar
+import com.example.ui.screens.CustomPageRendererScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LibraryScreen
 import com.example.ui.screens.ModernPlayerScreen
@@ -222,6 +223,9 @@ fun MyTubeApp(
     val customBackgroundDim by viewModel.settingsManager.customBackgroundDim.collectAsStateWithLifecycle()
     val currentUiTheme by viewModel.settingsManager.uiTheme.collectAsStateWithLifecycle()
 
+    val customIcons by viewModel.interfaceBuilderManager.customIcons.collectAsStateWithLifecycle()
+    val activeCustomPage by viewModel.activeCustomPage.collectAsStateWithLifecycle()
+
     var showCreateClipDialog by remember { mutableStateOf(false) }
     var showSplashScreen by remember { mutableStateOf(true) }
 
@@ -318,6 +322,7 @@ fun MyTubeApp(
             // Full YouTube Settings Screen
             SettingsScreen(
                 settingsManager = viewModel.settingsManager,
+                interfaceBuilderManager = viewModel.interfaceBuilderManager,
                 onBack = { viewModel.setSettingsOpen(false) },
                 onClearWatchHistory = {
                     viewModel.clearWatchHistory()
@@ -406,7 +411,19 @@ fun MyTubeApp(
                             },
                             unreadNotificationCount = unreadNotificationCount,
                             userAvatarUri = userAvatarUri,
-                            userName = userName
+                            userName = userName,
+                            customIcons = customIcons,
+                            onCustomIconClick = { customIcon ->
+                                viewModel.executeIconAction(
+                                    actionType = customIcon.actionType,
+                                    actionTarget = customIcon.actionTarget,
+                                    onNotice = { msg ->
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar(msg)
+                                        }
+                                    }
+                                )
+                            }
                         )
                     }
                 },
@@ -689,6 +706,22 @@ fun MyTubeApp(
                         snackbarHostState.showSnackbar("Profile updated offline")
                     }
                 }
+            )
+        }
+
+        // User-Created Offline Custom Page Screen
+        if (activeCustomPage != null) {
+            CustomPageRendererScreen(
+                page = activeCustomPage!!,
+                onBack = { viewModel.closeCustomPage() },
+                onNavigateToScreen = { tabIdx ->
+                    viewModel.closeCustomPage()
+                    viewModel.selectTab(tabIdx)
+                },
+                onOpenAnotherPage = { pageId ->
+                    viewModel.openCustomPageById(pageId)
+                },
+                modifier = Modifier.fillMaxSize()
             )
         }
 

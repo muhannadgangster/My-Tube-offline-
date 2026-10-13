@@ -101,10 +101,13 @@ import com.example.ui.theme.YtSurfaceVariant
 import com.example.ui.theme.YtTextPrimary
 import com.example.ui.theme.YtTextSecondary
 
+import com.example.data.InterfaceBuilderManager
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settingsManager: SettingsManager,
+    interfaceBuilderManager: InterfaceBuilderManager? = null,
     onBack: () -> Unit,
     onClearWatchHistory: () -> Unit,
     onClearSearchHistory: () -> Unit,
@@ -217,8 +220,10 @@ fun SettingsScreen(
         BackHandler {
             showCustomizeInterfaceScreen = false
         }
+        val actualBuilderManager = interfaceBuilderManager ?: remember { InterfaceBuilderManager(context) }
         CustomizeInterfaceScreen(
             settingsManager = settingsManager,
+            interfaceBuilderManager = actualBuilderManager,
             onBack = { showCustomizeInterfaceScreen = false },
             modifier = modifier
         )
@@ -812,6 +817,14 @@ fun SettingsScreen(
             // 5. CUSTOMIZE APP & INTERFACE STUDIO
             // ==========================================
             item { SettingsSectionHeader("Customize Interface & Layout Studio") }
+
+            item {
+                SettingsClickableRow(
+                    title = "Customize Interface → Interface Builder",
+                    value = "Dashboard & Pages ✨",
+                    onClick = { showCustomizeInterfaceScreen = true }
+                )
+            }
 
             item {
                 SettingsSwitchRow(

@@ -21,9 +21,69 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+import com.example.data.InterfaceBuilderManager
+import com.example.data.model.ActionTypes
+import com.example.data.model.CustomPageDefinition
+
 class YouTubeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = VideoRepository(application)
     val settingsManager = SettingsManager(application)
+    val interfaceBuilderManager = InterfaceBuilderManager(application)
+
+    private val _activeCustomPage = MutableStateFlow<CustomPageDefinition?>(null)
+    val activeCustomPage: StateFlow<CustomPageDefinition?> = _activeCustomPage.asStateFlow()
+
+    fun openCustomPage(page: CustomPageDefinition) {
+        _activeCustomPage.value = page
+    }
+
+    fun openCustomPageById(pageId: String) {
+        val page = interfaceBuilderManager.getCustomPage(pageId)
+        if (page != null) {
+            _activeCustomPage.value = page
+        }
+    }
+
+    fun closeCustomPage() {
+        _activeCustomPage.value = null
+    }
+
+    fun executeIconAction(actionType: String, actionTarget: String, onNotice: (String) -> Unit = {}) {
+        when (actionType) {
+            ActionTypes.OPEN_CUSTOM_PAGE -> {
+                if (actionTarget.isNotBlank()) {
+                    openCustomPageById(actionTarget)
+                } else {
+                    val firstPage = interfaceBuilderManager.customPages.value.firstOrNull()
+                    if (firstPage != null) openCustomPage(firstPage)
+                    else onNotice("No custom page assigned")
+                }
+            }
+            ActionTypes.OPEN_SCREEN -> {
+                when (actionTarget.lowercase()) {
+                    "shorts", "1" -> selectTab(1)
+                    "subscriptions", "3" -> selectTab(3)
+                    "library", "you", "profile", "4" -> selectTab(4)
+                    else -> selectTab(0)
+                }
+            }
+            ActionTypes.OPEN_SETTINGS -> {
+                setSettingsOpen(true)
+            }
+            ActionTypes.TOGGLE_FEATURE -> {
+                when (actionTarget.lowercase()) {
+                    "neon" -> settingsManager.setNeonLightsMaster(!settingsManager.neonLightsMaster.value)
+                    "glass" -> settingsManager.setLiquidGlassMaster(!settingsManager.liquidGlassMaster.value)
+                    "dark" -> settingsManager.setDarkTheme(!settingsManager.darkTheme.value)
+                    else -> onNotice("Toggled $actionTarget")
+                }
+            }
+            ActionTypes.SHOW_INFO -> {
+                onNotice(if (actionTarget.isNotBlank()) actionTarget else "Custom Action Triggered")
+            }
+            else -> onNotice("Action Triggered")
+        }
+    }
 
     private val _shuffleSeed = MutableStateFlow(0L)
     val shuffleSeed: StateFlow<Long> = _shuffleSeed.asStateFlow()

@@ -57,6 +57,10 @@ import com.example.ui.theme.YtSurfaceVariant
 import com.example.ui.theme.YtTextPrimary
 import com.example.ui.theme.YtTextSecondary
 
+import com.example.data.model.CustomIconItem
+import com.example.data.model.IconLocations
+import com.example.util.IconCatalog
+
 @Composable
 fun YouTubeTopBar(
     isSearchActive: Boolean,
@@ -69,6 +73,8 @@ fun YouTubeTopBar(
     unreadNotificationCount: Int = 0,
     userAvatarUri: String? = null,
     userName: String = "Muhannad Murtaza",
+    customIcons: List<CustomIconItem> = emptyList(),
+    onCustomIconClick: (CustomIconItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currentTheme = LocalUiTheme.current
@@ -275,6 +281,24 @@ fun YouTubeTopBar(
                         tint = YtTextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
+                }
+
+                // Dynamic User-Configured Custom Icons (from Interface Builder)
+                val topBarCustomIcons = customIcons.filter { it.targetLocation == IconLocations.MAIN_TOP_BAR && it.visible }
+                topBarCustomIcons.forEach { customIcon ->
+                    IconButton(
+                        onClick = { onCustomIconClick(customIcon) },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("top_bar_custom_icon_${customIcon.id}")
+                    ) {
+                        Icon(
+                            imageVector = IconCatalog.getIconByName(customIcon.iconName),
+                            contentDescription = customIcon.label,
+                            tint = customIcon.tintColorHex?.let { Color(it) } ?: accentColor,
+                            modifier = Modifier.size(customIcon.sizeDp.dp)
+                        )
+                    }
                 }
 
                 // Search Icon
