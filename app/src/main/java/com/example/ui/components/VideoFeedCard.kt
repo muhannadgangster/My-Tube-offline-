@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.VideoItem
 import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiCustomization
 import com.example.ui.theme.LocalUiTheme
 import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtAvatarIndigo
@@ -77,16 +78,20 @@ fun VideoFeedCard(
 
     val currentTheme = LocalUiTheme.current
     val glassConfig = LocalLiquidGlassConfig.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val customization = LocalUiCustomization.current
+    val isGlass = (currentTheme.contains("Liquid Glass") || glassConfig.isEnabled) && customization.homeGlassCards
+    val cardRadius = customization.homeCardCornerRadiusDp.dp
+    val cardPadding = customization.homeCardPaddingDp.dp
+    val cardSpacing = customization.homeCardSpacingDp.dp
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = cardPadding, vertical = (cardSpacing / 2).coerceAtLeast(2.dp))
             .then(
                 if (isGlass) {
                     Modifier.liquidGlassSurface(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(cardRadius),
                         config = glassConfig,
                         elevation = 4.dp
                     )
@@ -95,15 +100,15 @@ fun VideoFeedCard(
                 }
             )
             .clickable { onClick() }
-            .padding(vertical = 10.dp)
+            .padding(vertical = 8.dp)
             .testTag("video_feed_card_${video.id}")
     ) {
         // 16:9 Thumbnail container
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .padding(horizontal = 8.dp)
+                .clip(RoundedCornerShape((cardRadius - 2.dp).coerceAtLeast(4.dp)))
                 .aspectRatio(16f / 9f)
         ) {
             VideoThumbnailView(

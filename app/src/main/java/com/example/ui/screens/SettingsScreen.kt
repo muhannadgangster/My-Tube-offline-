@@ -73,6 +73,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
+import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.liquidGlassSurface
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -146,6 +148,7 @@ fun SettingsScreen(
     val experimentalAudioBooster by settingsManager.experimentalAudioBooster.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+    val glassConfig = LocalLiquidGlassConfig.current
     val customAccentColorHex by settingsManager.customAccentColorHex.collectAsStateWithLifecycle()
     val customBackgroundUri by settingsManager.customBackgroundUri.collectAsStateWithLifecycle()
     val customBackgroundDim by settingsManager.customBackgroundDim.collectAsStateWithLifecycle()
@@ -208,6 +211,19 @@ fun SettingsScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showNoticeMessage by remember { mutableStateOf<String?>(null) }
+    var showCustomizeInterfaceScreen by remember { mutableStateOf(false) }
+
+    if (showCustomizeInterfaceScreen) {
+        BackHandler {
+            showCustomizeInterfaceScreen = false
+        }
+        CustomizeInterfaceScreen(
+            settingsManager = settingsManager,
+            onBack = { showCustomizeInterfaceScreen = false },
+            modifier = modifier
+        )
+        return
+    }
 
     Column(
         modifier = modifier
@@ -245,6 +261,81 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
+            // Prominent Customize Interface Studio Entry Card
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { showCustomizeInterfaceScreen = true }
+                        .then(
+                            if (lgMaster) {
+                                Modifier.liquidGlassSurface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    config = glassConfig,
+                                    accentColor = Color(customAccentColorHex),
+                                    elevation = 6.dp
+                                )
+                            } else {
+                                Modifier
+                                    .background(YtSurfaceVariant)
+                                    .border(1.dp, YtBorder, RoundedCornerShape(14.dp))
+                            }
+                        )
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color(customAccentColorHex).copy(alpha = 0.25f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                tint = Color(customAccentColorHex),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Customize Interface Studio",
+                                    color = YtTextPrimary,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "LIVE ✨",
+                                    color = Color(customAccentColorHex),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Customize Home feed, Shorts, Nav bar, Profile, Notifications, GPU Shaders & Physics",
+                                color = YtTextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Open",
+                            tint = YtTextSecondary
+                        )
+                    }
+                }
+            }
+
             // Account Header Card
             item {
                 Row(

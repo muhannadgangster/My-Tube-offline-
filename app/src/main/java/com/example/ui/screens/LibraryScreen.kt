@@ -90,7 +90,10 @@ fun LibraryScreen(
     val glassConfig = LocalLiquidGlassConfig.current
     val currentTheme = LocalUiTheme.current
     val appAccent = LocalAppAccentColor.current
+    val customization = com.example.ui.theme.LocalUiCustomization.current
     val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val avatarRadius = customization.profileAvatarCornerRadius
+    val avatarShape = if (avatarRadius >= 45f) CircleShape else RoundedCornerShape((avatarRadius * 0.45f).dp)
 
     LazyColumn(
         modifier = modifier
@@ -142,13 +145,13 @@ fun LibraryScreen(
                             .then(
                                 if (isGlass) {
                                     Modifier.liquidGlassSurface(
-                                        shape = CircleShape,
+                                        shape = avatarShape,
                                         config = glassConfig,
                                         accentColor = appAccent,
                                         elevation = 3.dp
                                     )
                                 } else {
-                                    Modifier.clip(CircleShape).background(YtAvatarPurple)
+                                    Modifier.clip(avatarShape).background(YtAvatarPurple)
                                 }
                             )
                             .clickable { onEditProfileClick() },
@@ -161,7 +164,7 @@ fun LibraryScreen(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(CircleShape)
+                                    .clip(avatarShape)
                             )
                         } else {
                             Text(

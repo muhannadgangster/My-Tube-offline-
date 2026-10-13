@@ -14,7 +14,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import com.example.ui.theme.LocalLiquidGlassConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -90,6 +95,11 @@ class MainActivity : ComponentActivity() {
             val neonAnimated by viewModel.settingsManager.neonAnimated.collectAsStateWithLifecycle()
             val neonSpeed by viewModel.settingsManager.neonAnimationSpeed.collectAsStateWithLifecycle()
 
+            val opticalShaderEnabled by viewModel.settingsManager.opticalShaderEnabled.collectAsStateWithLifecycle()
+            val opticalCurvaturePower by viewModel.settingsManager.opticalCurvaturePower.collectAsStateWithLifecycle()
+            val opticalChromaticDispersion by viewModel.settingsManager.opticalChromaticDispersion.collectAsStateWithLifecycle()
+            val springPhysicsEnabled by viewModel.settingsManager.springPhysicsEnabled.collectAsStateWithLifecycle()
+
             val glassConfig = com.example.ui.theme.LiquidGlassStyleConfig(
                 isEnabled = lgMaster,
                 glassIntensity = lgIntensity,
@@ -99,6 +109,10 @@ class MainActivity : ComponentActivity() {
                 specularHighlight = lgSpecular,
                 borderThicknessDp = lgBorderThickness,
                 isDarkGlass = uiTheme != "Liquid Glass (Light)" && uiTheme != "Light Mode",
+                opticalShaderEnabled = opticalShaderEnabled,
+                edgeCurvaturePower = opticalCurvaturePower,
+                chromaticDispersion = opticalChromaticDispersion,
+                springPhysicsEnabled = springPhysicsEnabled,
                 neonEnabled = neonMaster,
                 neonColorHex = neonColorHex,
                 neonIntensity = neonIntensity,
@@ -106,10 +120,49 @@ class MainActivity : ComponentActivity() {
                 neonAnimationSpeed = neonSpeed
             )
 
+            val homeCardCornerRadius by viewModel.settingsManager.homeCardCornerRadius.collectAsStateWithLifecycle()
+            val homeCardSpacing by viewModel.settingsManager.homeCardSpacing.collectAsStateWithLifecycle()
+            val homeCardPadding by viewModel.settingsManager.homeCardPadding.collectAsStateWithLifecycle()
+            val homeGlassCards by viewModel.settingsManager.homeGlassCards.collectAsStateWithLifecycle()
+            val shortsActionButtonStyle by viewModel.settingsManager.shortsActionButtonStyle.collectAsStateWithLifecycle()
+            val shortsActionIconScale by viewModel.settingsManager.shortsActionIconScale.collectAsStateWithLifecycle()
+            val shortsOverlayAlpha by viewModel.settingsManager.shortsOverlayAlpha.collectAsStateWithLifecycle()
+            val navBarHeightDp by viewModel.settingsManager.navBarHeightDp.collectAsStateWithLifecycle()
+            val navBarGlassEnabled by viewModel.settingsManager.navBarGlassEnabled.collectAsStateWithLifecycle()
+            val navBarIndicatorStyle by viewModel.settingsManager.navBarIndicatorStyle.collectAsStateWithLifecycle()
+            val navBarShowLabels by viewModel.settingsManager.navBarShowLabels.collectAsStateWithLifecycle()
+            val profileHeaderGlassStyle by viewModel.settingsManager.profileHeaderGlassStyle.collectAsStateWithLifecycle()
+            val profileAvatarCornerRadius by viewModel.settingsManager.profileAvatarCornerRadius.collectAsStateWithLifecycle()
+            val profileActionButtonsGlass by viewModel.settingsManager.profileActionButtonsGlass.collectAsStateWithLifecycle()
+            val notifCardCornerRadius by viewModel.settingsManager.notificationCardCornerRadius.collectAsStateWithLifecycle()
+            val notifGlassCards by viewModel.settingsManager.notificationGlassCards.collectAsStateWithLifecycle()
+            val notifCardSpacing by viewModel.settingsManager.notificationCardSpacing.collectAsStateWithLifecycle()
+
+            val uiCustomization = com.example.ui.theme.UiCustomizationConfig(
+                homeCardCornerRadiusDp = homeCardCornerRadius,
+                homeCardSpacingDp = homeCardSpacing,
+                homeCardPaddingDp = homeCardPadding,
+                homeGlassCards = homeGlassCards,
+                shortsActionButtonStyle = shortsActionButtonStyle,
+                shortsActionIconScale = shortsActionIconScale,
+                shortsOverlayAlpha = shortsOverlayAlpha,
+                navBarHeightDp = navBarHeightDp,
+                navBarGlassEnabled = navBarGlassEnabled,
+                navBarIndicatorStyle = navBarIndicatorStyle,
+                navBarShowLabels = navBarShowLabels,
+                profileHeaderGlassStyle = profileHeaderGlassStyle,
+                profileAvatarCornerRadius = profileAvatarCornerRadius,
+                profileActionButtonsGlass = profileActionButtonsGlass,
+                notifCardCornerRadiusDp = notifCardCornerRadius,
+                notifGlassCards = notifGlassCards,
+                notifCardSpacingDp = notifCardSpacing
+            )
+
             MyApplicationTheme(
                 uiTheme = uiTheme,
                 customAccentColorHex = customAccentColorHex,
-                liquidGlassConfig = glassConfig
+                liquidGlassConfig = glassConfig,
+                uiCustomization = uiCustomization
             ) {
                 MyTubeApp(viewModel = viewModel)
             }
@@ -369,10 +422,42 @@ fun MyTubeApp(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    val currentGlassConfig = LocalLiquidGlassConfig.current
                     AnimatedContent(
                         targetState = selectedTab,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "tab_switch_animation"
+                        transitionSpec = {
+                            if (currentGlassConfig.springPhysicsEnabled) {
+                                val direction = if (targetState > initialState) 1 else -1
+                                (slideInHorizontally(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    ),
+                                    initialOffsetX = { fullWidth -> fullWidth * direction / 3 }
+                                ) + fadeIn(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )).togetherWith(
+                                    slideOutHorizontally(
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioNoBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        ),
+                                        targetOffsetX = { fullWidth -> -fullWidth * direction / 4 }
+                                    ) + fadeOut(
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioNoBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        )
+                                    )
+                                )
+                            } else {
+                                fadeIn() togetherWith fadeOut()
+                            }
+                        },
+                        label = "tab_spring_transition"
                     ) { tab ->
                         when (tab) {
                             0 -> HomeScreen(

@@ -533,6 +533,185 @@ class SettingsManager(context: Context) {
         prefs.edit().putString("layout_icon_style", mode).apply()
     }
 
+    // -------------------------------------------------------------
+    // ADVANCED UI CUSTOMIZATION ENGINE (A-Z Interface Customization)
+    // -------------------------------------------------------------
+
+    // A. Home Feed Customization
+    private val _homeCardCornerRadius = MutableStateFlow(prefs.getFloat("home_card_corner_radius", 14f))
+    val homeCardCornerRadius: StateFlow<Float> = _homeCardCornerRadius.asStateFlow()
+
+    private val _homeCardSpacing = MutableStateFlow(prefs.getFloat("home_card_spacing", 12f))
+    val homeCardSpacing: StateFlow<Float> = _homeCardSpacing.asStateFlow()
+
+    private val _homeCardPadding = MutableStateFlow(prefs.getFloat("home_card_padding", 8f))
+    val homeCardPadding: StateFlow<Float> = _homeCardPadding.asStateFlow()
+
+    private val _homeGlassCards = MutableStateFlow(prefs.getBoolean("home_glass_cards", true))
+    val homeGlassCards: StateFlow<Boolean> = _homeGlassCards.asStateFlow()
+
+    // B. Shorts Screen Customization
+    private val _shortsActionButtonStyle = MutableStateFlow(prefs.getString("shorts_action_btn_style", "Glass Pill") ?: "Glass Pill")
+    val shortsActionButtonStyle: StateFlow<String> = _shortsActionButtonStyle.asStateFlow()
+
+    private val _shortsActionIconScale = MutableStateFlow(prefs.getFloat("shorts_action_icon_scale", 1.0f))
+    val shortsActionIconScale: StateFlow<Float> = _shortsActionIconScale.asStateFlow()
+
+    private val _shortsOverlayAlpha = MutableStateFlow(prefs.getFloat("shorts_overlay_alpha", 0.85f))
+    val shortsOverlayAlpha: StateFlow<Float> = _shortsOverlayAlpha.asStateFlow()
+
+    // C. Shorts & Bottom Navigation Customization
+    private val _navBarHeightDp = MutableStateFlow(prefs.getFloat("nav_bar_height_dp", 54f))
+    val navBarHeightDp: StateFlow<Float> = _navBarHeightDp.asStateFlow()
+
+    private val _navBarGlassEnabled = MutableStateFlow(prefs.getBoolean("nav_bar_glass_enabled", true))
+    val navBarGlassEnabled: StateFlow<Boolean> = _navBarGlassEnabled.asStateFlow()
+
+    private val _navBarIndicatorStyle = MutableStateFlow(prefs.getString("nav_bar_indicator_style", "Liquid Glass Pill") ?: "Liquid Glass Pill")
+    val navBarIndicatorStyle: StateFlow<String> = _navBarIndicatorStyle.asStateFlow()
+
+    private val _navBarShowLabels = MutableStateFlow(prefs.getBoolean("nav_bar_show_labels", true))
+    val navBarShowLabels: StateFlow<Boolean> = _navBarShowLabels.asStateFlow()
+
+    // D. Profile UI Customization
+    private val _profileHeaderGlassStyle = MutableStateFlow(prefs.getString("profile_header_glass_style", "Liquid Glass Card") ?: "Liquid Glass Card")
+    val profileHeaderGlassStyle: StateFlow<String> = _profileHeaderGlassStyle.asStateFlow()
+
+    private val _profileAvatarCornerRadius = MutableStateFlow(prefs.getFloat("profile_avatar_corner_radius", 50f))
+    val profileAvatarCornerRadius: StateFlow<Float> = _profileAvatarCornerRadius.asStateFlow()
+
+    private val _profileActionButtonsGlass = MutableStateFlow(prefs.getBoolean("profile_action_buttons_glass", true))
+    val profileActionButtonsGlass: StateFlow<Boolean> = _profileActionButtonsGlass.asStateFlow()
+
+    // E. Notification UI Customization
+    private val _notificationCardCornerRadius = MutableStateFlow(prefs.getFloat("notif_card_corner_radius", 14f))
+    val notificationCardCornerRadius: StateFlow<Float> = _notificationCardCornerRadius.asStateFlow()
+
+    private val _notificationGlassCards = MutableStateFlow(prefs.getBoolean("notif_glass_cards", true))
+    val notificationGlassCards: StateFlow<Boolean> = _notificationGlassCards.asStateFlow()
+
+    private val _notificationCardSpacing = MutableStateFlow(prefs.getFloat("notif_card_spacing", 8f))
+    val notificationCardSpacing: StateFlow<Float> = _notificationCardSpacing.asStateFlow()
+
+    // F. Optical GPU Shader & Real-Time Refraction
+    private val _opticalShaderEnabled = MutableStateFlow(prefs.getBoolean("optical_shader_enabled", true))
+    val opticalShaderEnabled: StateFlow<Boolean> = _opticalShaderEnabled.asStateFlow()
+
+    private val _opticalCurvaturePower = MutableStateFlow(prefs.getFloat("optical_curvature_power", 2.5f))
+    val opticalCurvaturePower: StateFlow<Float> = _opticalCurvaturePower.asStateFlow()
+
+    private val _opticalChromaticDispersion = MutableStateFlow(prefs.getFloat("optical_chromatic_dispersion", 0.45f))
+    val opticalChromaticDispersion: StateFlow<Float> = _opticalChromaticDispersion.asStateFlow()
+
+    private val _springPhysicsEnabled = MutableStateFlow(prefs.getBoolean("spring_physics_enabled", true))
+    val springPhysicsEnabled: StateFlow<Boolean> = _springPhysicsEnabled.asStateFlow()
+
+    // Setters for UI Customization
+    fun setHomeCardCornerRadius(v: Float) {
+        _homeCardCornerRadius.value = v
+        prefs.edit().putFloat("home_card_corner_radius", v).apply()
+    }
+
+    fun setHomeCardSpacing(v: Float) {
+        _homeCardSpacing.value = v
+        prefs.edit().putFloat("home_card_spacing", v).apply()
+    }
+
+    fun setHomeCardPadding(v: Float) {
+        _homeCardPadding.value = v
+        prefs.edit().putFloat("home_card_padding", v).apply()
+    }
+
+    fun setHomeGlassCards(v: Boolean) {
+        _homeGlassCards.value = v
+        prefs.edit().putBoolean("home_glass_cards", v).apply()
+    }
+
+    fun setShortsActionButtonStyle(v: String) {
+        _shortsActionButtonStyle.value = v
+        prefs.edit().putString("shorts_action_btn_style", v).apply()
+    }
+
+    fun setShortsActionIconScale(v: Float) {
+        _shortsActionIconScale.value = v
+        prefs.edit().putFloat("shorts_action_icon_scale", v).apply()
+    }
+
+    fun setShortsOverlayAlpha(v: Float) {
+        _shortsOverlayAlpha.value = v
+        prefs.edit().putFloat("shorts_overlay_alpha", v).apply()
+    }
+
+    fun setNavBarHeightDp(v: Float) {
+        _navBarHeightDp.value = v
+        prefs.edit().putFloat("nav_bar_height_dp", v).apply()
+    }
+
+    fun setNavBarGlassEnabled(v: Boolean) {
+        _navBarGlassEnabled.value = v
+        prefs.edit().putBoolean("nav_bar_glass_enabled", v).apply()
+    }
+
+    fun setNavBarIndicatorStyle(v: String) {
+        _navBarIndicatorStyle.value = v
+        prefs.edit().putString("nav_bar_indicator_style", v).apply()
+    }
+
+    fun setNavBarShowLabels(v: Boolean) {
+        _navBarShowLabels.value = v
+        prefs.edit().putBoolean("nav_bar_show_labels", v).apply()
+    }
+
+    fun setProfileHeaderGlassStyle(v: String) {
+        _profileHeaderGlassStyle.value = v
+        prefs.edit().putString("profile_header_glass_style", v).apply()
+    }
+
+    fun setProfileAvatarCornerRadius(v: Float) {
+        _profileAvatarCornerRadius.value = v
+        prefs.edit().putFloat("profile_avatar_corner_radius", v).apply()
+    }
+
+    fun setProfileActionButtonsGlass(v: Boolean) {
+        _profileActionButtonsGlass.value = v
+        prefs.edit().putBoolean("profile_action_buttons_glass", v).apply()
+    }
+
+    fun setNotificationCardCornerRadius(v: Float) {
+        _notificationCardCornerRadius.value = v
+        prefs.edit().putFloat("notif_card_corner_radius", v).apply()
+    }
+
+    fun setNotificationGlassCards(v: Boolean) {
+        _notificationGlassCards.value = v
+        prefs.edit().putBoolean("notif_glass_cards", v).apply()
+    }
+
+    fun setNotificationCardSpacing(v: Float) {
+        _notificationCardSpacing.value = v
+        prefs.edit().putFloat("notif_card_spacing", v).apply()
+    }
+
+    fun setOpticalShaderEnabled(v: Boolean) {
+        _opticalShaderEnabled.value = v
+        prefs.edit().putBoolean("optical_shader_enabled", v).apply()
+    }
+
+    fun setOpticalCurvaturePower(v: Float) {
+        _opticalCurvaturePower.value = v
+        prefs.edit().putFloat("optical_curvature_power", v).apply()
+    }
+
+    fun setOpticalChromaticDispersion(v: Float) {
+        _opticalChromaticDispersion.value = v
+        prefs.edit().putFloat("optical_chromatic_dispersion", v).apply()
+    }
+
+    fun setSpringPhysicsEnabled(v: Boolean) {
+        _springPhysicsEnabled.value = v
+        prefs.edit().putBoolean("spring_physics_enabled", v).apply()
+    }
+
     fun resetAllAppearance() {
         setLiquidGlassMaster(true)
         setLiquidGlassIntensity(0.85f)
@@ -555,5 +734,26 @@ class SettingsManager(context: Context) {
         setShowShortsActionSave(true)
         setPlayerControlsSize(1.0f)
         setIconStyleMode("Glass")
+        setHomeCardCornerRadius(14f)
+        setHomeCardSpacing(12f)
+        setHomeCardPadding(8f)
+        setHomeGlassCards(true)
+        setShortsActionButtonStyle("Glass Pill")
+        setShortsActionIconScale(1.0f)
+        setShortsOverlayAlpha(0.85f)
+        setNavBarHeightDp(54f)
+        setNavBarGlassEnabled(true)
+        setNavBarIndicatorStyle("Liquid Glass Pill")
+        setNavBarShowLabels(true)
+        setProfileHeaderGlassStyle("Liquid Glass Card")
+        setProfileAvatarCornerRadius(50f)
+        setProfileActionButtonsGlass(true)
+        setNotificationCardCornerRadius(14f)
+        setNotificationGlassCards(true)
+        setNotificationCardSpacing(8f)
+        setOpticalShaderEnabled(true)
+        setOpticalCurvaturePower(2.5f)
+        setOpticalChromaticDispersion(0.45f)
+        setSpringPhysicsEnabled(true)
     }
 }

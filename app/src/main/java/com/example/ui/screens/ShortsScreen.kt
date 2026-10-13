@@ -805,6 +805,9 @@ private fun ShortsActionButton(
     onClick: () -> Unit
 ) {
     val glassConfig = com.example.ui.theme.LocalLiquidGlassConfig.current
+    val customization = com.example.ui.theme.LocalUiCustomization.current
+    val scale = customization.shortsActionIconScale
+    val btnStyle = customization.shortsActionButtonStyle
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -815,21 +818,35 @@ private fun ShortsActionButton(
             ) { onClick() }
             .testTag(testTag)
     ) {
+        val buttonShape = when (btnStyle) {
+            "Glass Pill" -> RoundedCornerShape(12.dp)
+            else -> CircleShape
+        }
+        val isGlass = glassConfig.isEnabled || glassConfig.neonEnabled
         Box(
             modifier = Modifier
-                .size(42.dp.scaled())
+                .size((42 * scale).dp.scaled())
                 .then(
-                    if (glassConfig.isEnabled || glassConfig.neonEnabled) {
-                        Modifier.liquidGlassSurface(
-                            shape = CircleShape,
-                            config = glassConfig,
-                            accentColor = tint,
-                            elevation = 4.dp
-                        )
-                    } else {
-                        Modifier
+                    when (btnStyle) {
+                        "Glow" -> Modifier
                             .clip(CircleShape)
-                            .background(Color(0x33000000))
+                            .background(tint.copy(alpha = 0.35f))
+                            .border(1.5.dp, tint, CircleShape)
+                        "Minimal" -> Modifier
+                            .clip(CircleShape)
+                            .background(Color(0x55000000))
+                        else -> if (isGlass) {
+                            Modifier.liquidGlassSurface(
+                                shape = buttonShape,
+                                config = glassConfig,
+                                accentColor = tint,
+                                elevation = 4.dp
+                            )
+                        } else {
+                            Modifier
+                                .clip(buttonShape)
+                                .background(Color(0x33000000))
+                        }
                     }
                 ),
             contentAlignment = Alignment.Center
@@ -838,7 +855,7 @@ private fun ShortsActionButton(
                 imageVector = icon,
                 contentDescription = label,
                 tint = tint,
-                modifier = Modifier.size(24.dp.scaled())
+                modifier = Modifier.size((24 * scale).dp.scaled())
             )
         }
         Spacer(modifier = Modifier.height(2.dp.scaled()))

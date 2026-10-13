@@ -25,6 +25,75 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import android.graphics.RenderEffect as AndroidRenderEffect
+import android.graphics.RuntimeShader
+import android.graphics.Shader
+import android.os.Build
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+
+/**
+ * Android Graphics Shading Language (AGSL) Real-Time Optical Liquid Glass Shader
+ * Runs directly on GPU for real-time background pixel refraction and chromatic dispersion.
+ */
+private const val AGSL_LIQUID_GLASS = """
+    uniform shader uContent;
+    uniform float2 uResolution;
+    uniform float uRefraction;
+    uniform float uCurvature;
+    uniform float uDispersion;
+    
+    half4 main(float2 fragCoord) {
+        if (uResolution.x <= 1.0 || uResolution.y <= 1.0) {
+            return uContent.eval(fragCoord);
+        }
+        float2 uv = fragCoord / uResolution;
+        float2 p = (uv - 0.5) * 2.0;
+        float r = length(p);
+        
+        float edgeDistort = pow(clamp(r, 0.0, 1.0), uCurvature) * (uRefraction * 0.05);
+        float2 offset = normalize(p + 0.0001) * edgeDistort;
+        
+        float disp = uDispersion * 0.008;
+        float2 uvR = clamp(uv - offset * (1.0 + disp), 0.0, 1.0);
+        float2 uvG = clamp(uv - offset, 0.0, 1.0);
+        float2 uvB = clamp(uv - offset * (1.0 - disp), 0.0, 1.0);
+        
+        half4 cR = uContent.eval(uvR * uResolution);
+        half4 cG = uContent.eval(uvG * uResolution);
+        half4 cB = uContent.eval(uvB * uResolution);
+        
+        float fresnel = pow(clamp(r, 0.0, 1.0), 3.2) * (uRefraction * 0.25);
+        
+        half4 col = half4(cR.r, cG.g, cB.b, (cR.a + cG.a + cB.a) / 3.0);
+        col.rgb += half3(fresnel, fresnel, fresnel);
+        return col;
+    }
+"""
+
+/**
+ * Spring-Physics animation specifications for iOS-quality fluid transitions
+ */
+object LiquidPhysics {
+    val NavigationSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow
+    )
+    val PanelSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+    val TouchSpring = spring<Float>(
+        dampingRatio = 0.75f,
+        stiffness = 450f
+    )
+    val IndicatorSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+}
 
 /**
  * Full-app Liquid Glass & Neon styling configuration state
@@ -40,6 +109,11 @@ data class LiquidGlassStyleConfig(
     val borderThicknessDp: Float = 1.0f,
     val isDarkGlass: Boolean = true,
     val isFrosted: Boolean = true,
+    // Optical GPU Shader & Edge Refraction
+    val opticalShaderEnabled: Boolean = true,
+    val edgeCurvaturePower: Float = 2.5f,
+    val chromaticDispersion: Float = 0.45f,
+    val springPhysicsEnabled: Boolean = true,
     // Neon Lights
     val neonEnabled: Boolean = false,
     val neonColorHex: Long = 0xFF00E5FFL, // Electric Cyan default
@@ -112,6 +186,33 @@ fun Modifier.liquidGlassSurface(
                 )
             } else Modifier
         )
+        .graphicsLayer {
+            if (config.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                try {
+                    val blurPx = config.blurRadius.coerceIn(0f, 60f)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && config.opticalShaderEnabled && size.width > 10f && size.height > 10f) {
+                        val shader = RuntimeShader(AGSL_LIQUID_GLASS).apply {
+                            setFloatUniform("uResolution", size.width, size.height)
+                            setFloatUniform("uRefraction", config.refractionIntensity)
+                            setFloatUniform("uCurvature", config.edgeCurvaturePower)
+                            setFloatUniform("uDispersion", config.chromaticDispersion)
+                        }
+                        val shaderEffect = AndroidRenderEffect.createRuntimeShaderEffect(shader, "uContent")
+                        val finalEffect = if (blurPx > 0.5f) {
+                            val blurEffect = AndroidRenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                            AndroidRenderEffect.createChainEffect(shaderEffect, blurEffect)
+                        } else {
+                            shaderEffect
+                        }
+                        renderEffect = finalEffect.asComposeRenderEffect()
+                    } else if (blurPx > 0.5f) {
+                        renderEffect = AndroidRenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP).asComposeRenderEffect()
+                    }
+                } catch (_: Throwable) {
+                    // Safe fallback if hardware shader not available
+                }
+            }
+        }
         .clip(shape)
         .background(baseGlassColor)
         .border(

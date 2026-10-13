@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiCustomization
 import com.example.ui.theme.LocalUiTheme
 import com.example.ui.theme.liquidGlassSurface
 
@@ -63,9 +64,12 @@ fun YouTubeBottomBar(
     val currentTheme = LocalUiTheme.current
     val accentColor = LocalAppAccentColor.current
     val glassConfig = LocalLiquidGlassConfig.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val customization = LocalUiCustomization.current
+    val isGlass = (currentTheme.contains("Liquid Glass") || glassConfig.isEnabled) && customization.navBarGlassEnabled
     val activeColor = accentColor
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val barHeight = customization.navBarHeightDp.dp.coerceAtLeast(46.dp)
+    val showLabels = customization.navBarShowLabels
 
     Column(
         modifier = modifier
@@ -93,7 +97,7 @@ fun YouTubeBottomBar(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(barHeight)
         ) {
             val totalWidth = maxWidth
             val tabWidth = totalWidth / 5
@@ -109,24 +113,45 @@ fun YouTubeBottomBar(
                 label = "sliding_tab_indicator"
             )
 
-            // Animated sliding glass pill background behind selected item
+            val indicatorStyle = customization.navBarIndicatorStyle
+            val indicatorWidth = when (indicatorStyle) {
+                "Dot Indicator" -> 16.dp
+                "Glow Bar" -> 36.dp
+                else -> 48.dp
+            }
+            val indicatorHeight = when (indicatorStyle) {
+                "Dot Indicator" -> 4.dp
+                "Glow Bar" -> 3.dp
+                else -> (barHeight - 8.dp).coerceAtLeast(36.dp)
+            }
+            val indicatorShape = when (indicatorStyle) {
+                "Dot Indicator" -> CircleShape
+                "Glow Bar" -> RoundedCornerShape(2.dp)
+                else -> RoundedCornerShape(12.dp)
+            }
+
+            // Animated sliding glass indicator following selected item
             Box(
                 modifier = Modifier
-                    .offset(x = tabWidth * animatedTabFraction + (tabWidth - 48.dp) / 2)
-                    .width(48.dp)
-                    .height(44.dp)
-                    .align(Alignment.CenterStart)
+                    .offset(x = tabWidth * animatedTabFraction + (tabWidth - indicatorWidth) / 2)
+                    .width(indicatorWidth)
+                    .height(indicatorHeight)
+                    .align(if (indicatorStyle == "Glow Bar" || indicatorStyle == "Dot Indicator") Alignment.BottomStart else Alignment.CenterStart)
                     .then(
-                        if (isGlass) {
+                        if (indicatorStyle == "Glow Bar" || indicatorStyle == "Dot Indicator") {
+                            Modifier
+                                .clip(indicatorShape)
+                                .background(accentColor)
+                        } else if (isGlass) {
                             Modifier.liquidGlassSurface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = indicatorShape,
                                 config = glassConfig,
                                 accentColor = accentColor,
                                 elevation = 2.dp
                             )
                         } else {
                             Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(indicatorShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         }
                     )
@@ -135,7 +160,7 @@ fun YouTubeBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(barHeight),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -275,6 +300,7 @@ private fun BottomNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val showLabels = LocalUiCustomization.current.navBarShowLabels
     Column(
         modifier = modifier
             .clickable(
@@ -287,12 +313,14 @@ private fun BottomNavItem(
         verticalArrangement = Arrangement.Center
     ) {
         icon()
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (showLabels) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

@@ -25,6 +25,31 @@ val LocalUiTheme = staticCompositionLocalOf { "Dark Mode" }
 // Local Accent Color provider (Replaces or tints Red elements across the app: Subscribe, Like, Progress bars, etc.)
 val LocalAppAccentColor = staticCompositionLocalOf { YtRed }
 
+/**
+ * Advanced full-app interface layout and component styling
+ */
+data class UiCustomizationConfig(
+    val homeCardCornerRadiusDp: Float = 14f,
+    val homeCardSpacingDp: Float = 12f,
+    val homeCardPaddingDp: Float = 8f,
+    val homeGlassCards: Boolean = true,
+    val shortsActionButtonStyle: String = "Glass Pill",
+    val shortsActionIconScale: Float = 1.0f,
+    val shortsOverlayAlpha: Float = 0.85f,
+    val navBarHeightDp: Float = 54f,
+    val navBarGlassEnabled: Boolean = true,
+    val navBarIndicatorStyle: String = "Liquid Glass Pill",
+    val navBarShowLabels: Boolean = true,
+    val profileHeaderGlassStyle: String = "Liquid Glass Card",
+    val profileAvatarCornerRadius: Float = 50f,
+    val profileActionButtonsGlass: Boolean = true,
+    val notifCardCornerRadiusDp: Float = 14f,
+    val notifGlassCards: Boolean = true,
+    val notifCardSpacingDp: Float = 8f
+)
+
+val LocalUiCustomization = staticCompositionLocalOf { UiCustomizationConfig() }
+
 // 1. YouTube Dark Color Scheme (Standard Pure Dark)
 private val YouTubeDarkColorScheme = darkColorScheme(
     primary = YtRed,
@@ -170,6 +195,7 @@ fun MyApplicationTheme(
     dynamicColor: Boolean = false,
     customAccentColorHex: Long? = null,
     liquidGlassConfig: LiquidGlassStyleConfig = LiquidGlassStyleConfig(),
+    uiCustomization: UiCustomizationConfig = UiCustomizationConfig(),
     content: @Composable () -> Unit
 ) {
     val currentDensity = LocalDensity.current
@@ -205,7 +231,8 @@ fun MyApplicationTheme(
         LocalLiquidGlassConfig provides liquidGlassConfig.copy(
             isEnabled = liquidGlassConfig.isEnabled && (isGlassTheme || liquidGlassConfig.isEnabled),
             isDarkGlass = uiTheme != "Liquid Glass (Light)" && uiTheme != "Light Mode"
-        )
+        ),
+        LocalUiCustomization provides uiCustomization
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

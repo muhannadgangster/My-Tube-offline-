@@ -54,6 +54,7 @@ import com.example.data.VideoItem
 import com.example.data.local.AppNotificationEntity
 import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.LocalUiCustomization
 import com.example.ui.theme.LocalUiTheme
 import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtBorder
@@ -306,16 +307,19 @@ private fun NotificationCard(
     onClick: () -> Unit
 ) {
     val glassConfig = LocalLiquidGlassConfig.current
-    val isGlass = glassConfig.isEnabled
+    val customization = LocalUiCustomization.current
+    val isGlass = glassConfig.isEnabled && customization.notifGlassCards
+    val cornerRadius = customization.notifCardCornerRadiusDp.dp
+    val spacing = customization.notifCardSpacingDp.dp
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .padding(horizontal = 10.dp, vertical = (spacing / 2).coerceAtLeast(2.dp))
             .then(
                 if (isGlass) {
                     Modifier.liquidGlassSurface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(cornerRadius),
                         config = glassConfig,
                         elevation = if (!item.isRead) 4.dp else 1.dp
                     )
