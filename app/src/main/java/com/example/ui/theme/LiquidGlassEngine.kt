@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -186,35 +187,55 @@ fun Modifier.liquidGlassSurface(
                 )
             } else Modifier
         )
-        .graphicsLayer {
-            if (config.isEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                try {
-                    val blurPx = config.blurRadius.coerceIn(0f, 60f)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && config.opticalShaderEnabled && size.width > 10f && size.height > 10f) {
-                        val shader = RuntimeShader(AGSL_LIQUID_GLASS).apply {
-                            setFloatUniform("uResolution", size.width, size.height)
-                            setFloatUniform("uRefraction", config.refractionIntensity)
-                            setFloatUniform("uCurvature", config.edgeCurvaturePower)
-                            setFloatUniform("uDispersion", config.chromaticDispersion)
-                        }
-                        val shaderEffect = AndroidRenderEffect.createRuntimeShaderEffect(shader, "uContent")
-                        val finalEffect = if (blurPx > 0.5f) {
-                            val blurEffect = AndroidRenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
-                            AndroidRenderEffect.createChainEffect(shaderEffect, blurEffect)
-                        } else {
-                            shaderEffect
-                        }
-                        renderEffect = finalEffect.asComposeRenderEffect()
-                    } else if (blurPx > 0.5f) {
-                        renderEffect = AndroidRenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP).asComposeRenderEffect()
-                    }
-                } catch (_: Throwable) {
-                    // Safe fallback if hardware shader not available
-                }
+        .clip(shape)
+        .drawBehind {
+            // 1. Base translucent glass material background
+            drawRect(color = baseGlassColor)
+
+            if (config.isEnabled && config.specularHighlight) {
+                // 2. Optical specular sheen (Apple iOS Liquid Glass style) across top-left quadrant
+                val specularBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = (0.28f * config.refractionIntensity).coerceIn(0.08f, 0.45f)),
+                        Color.White.copy(alpha = (0.08f * config.refractionIntensity).coerceIn(0.02f, 0.20f)),
+                        Color.Transparent
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width * 0.75f, size.height * 0.55f)
+                )
+                drawRect(
+                    brush = specularBrush,
+                    size = Size(size.width, size.height * 0.65f)
+                )
+
+                // 3. Subtle luminous bevel line along top rim
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = (0.50f * config.refractionIntensity).coerceIn(0.15f, 0.70f)),
+                            Color.White.copy(alpha = (0.20f * config.refractionIntensity).coerceIn(0.05f, 0.35f)),
+                            Color.Transparent
+                        )
+                    ),
+                    start = Offset(size.width * 0.04f, 1f),
+                    end = Offset(size.width * 0.96f, 1f),
+                    strokeWidth = 1.2.dp.toPx()
+                )
+            }
+
+            // 4. Optional neon edge ambient glow
+            if (config.neonEnabled) {
+                val neonGlowColor = Color(config.neonColorHex).copy(alpha = 0.18f * config.neonIntensity)
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(neonGlowColor, Color.Transparent),
+                        center = Offset(size.width / 2f, size.height / 2f),
+                        radius = (size.width.coerceAtLeast(size.height)) * 0.85f
+                    )
+                )
             }
         }
-        .clip(shape)
-        .background(baseGlassColor)
         .border(
             width = (config.borderThicknessDp.dp).coerceAtLeast(0.6.dp),
             brush = if (config.neonEnabled) {
@@ -239,53 +260,6 @@ fun Modifier.liquidGlassSurface(
             },
             shape = shape
         )
-        .drawWithContent {
-            drawContent()
-
-            if (config.isEnabled && config.specularHighlight) {
-                // Top-left curved optical specular sheen (Apple iOS Liquid Glass style)
-                val specularBrush = Brush.linearGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.38f * config.refractionIntensity),
-                        Color.White.copy(alpha = 0.10f * config.refractionIntensity),
-                        Color.Transparent
-                    ),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width * 0.75f, size.height * 0.45f)
-                )
-                drawRect(
-                    brush = specularBrush,
-                    size = Size(size.width, size.height * 0.55f)
-                )
-
-                // Thin luminous bevel stroke line across top rim
-                drawLine(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.65f * config.refractionIntensity),
-                            Color.White.copy(alpha = 0.25f * config.refractionIntensity),
-                            Color.Transparent
-                        )
-                    ),
-                    start = Offset(size.width * 0.05f, 1f),
-                    end = Offset(size.width * 0.95f, 1f),
-                    strokeWidth = 1.5.dp.toPx()
-                )
-            }
-
-            // Optional neon edge halo illumination
-            if (config.neonEnabled) {
-                val neonGlowColor = Color(config.neonColorHex).copy(alpha = 0.22f * config.neonIntensity)
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(neonGlowColor, Color.Transparent),
-                        center = Offset(size.width / 2f, size.height / 2f),
-                        radius = (size.width.coerceAtLeast(size.height)) * 0.85f
-                    )
-                )
-            }
-        }
 }
 
 /**

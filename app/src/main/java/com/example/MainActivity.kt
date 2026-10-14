@@ -12,10 +12,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -38,8 +41,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.VideoItem
@@ -428,10 +433,32 @@ fun MyTubeApp(
                     }
                 },
                 bottomBar = {
-                    YouTubeBottomBar(
-                        selectedTab = selectedTab,
-                        onTabSelected = { viewModel.selectTab(it) }
-                    )
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        AnimatedVisibility(
+                            visible = currentlyPlaying != null && isPlayerMinimized,
+                            enter = slideInVertically { it } + fadeIn(),
+                            exit = slideOutVertically { it } + fadeOut()
+                        ) {
+                            if (currentlyPlaying != null) {
+                                FloatingMiniPlayer(
+                                    video = currentlyPlaying!!,
+                                    isPaused = isPlaybackPaused,
+                                    onTogglePlayPause = { viewModel.togglePlaybackPaused() },
+                                    onExpand = { viewModel.expandPlayer() },
+                                    onClose = { viewModel.closePlayer() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                        YouTubeBottomBar(
+                            selectedTab = selectedTab,
+                            onTabSelected = { viewModel.selectTab(it) }
+                        )
+                    }
                 }
             ) { paddingValues ->
                 Box(
@@ -679,17 +706,6 @@ fun MyTubeApp(
                 onMarkAllAsRead = { viewModel.markAllNotificationsAsRead() },
                 onClearAll = { viewModel.clearAllNotifications() },
                 onDismiss = { viewModel.setNotificationsSheetOpen(false) }
-            )
-        }
-
-        // Floating Mini-Player (Picture-in-Picture) Draggable Overlay
-        if (currentlyPlaying != null && isPlayerMinimized) {
-            FloatingMiniPlayer(
-                video = currentlyPlaying!!,
-                isPaused = isPlaybackPaused,
-                onTogglePlayPause = { viewModel.togglePlaybackPaused() },
-                onExpand = { viewModel.expandPlayer() },
-                onClose = { viewModel.closePlayer() }
             )
         }
 
