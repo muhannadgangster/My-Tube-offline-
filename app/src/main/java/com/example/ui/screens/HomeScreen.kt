@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -102,23 +103,24 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Explore Compass Pill
+            val exploreShape = RoundedCornerShape(20.dp)
             Box(
                 modifier = Modifier
                     .then(
-                        if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                        if (glassConfig.isEnabled) {
                             Modifier.liquidGlassSurface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = exploreShape,
                                 config = glassConfig,
-                                elevation = 3.dp
+                                elevation = 2.dp
                             )
                         } else {
                             Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(exploreShape)
                                 .background(YtSurfaceVariant)
                         }
                     )
                     .clickable { onFilterSelected("All") }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
                     .testTag("filter_chip_explore"),
                 contentAlignment = Alignment.Center
             ) {
@@ -126,29 +128,30 @@ fun HomeScreen(
                     imageVector = Icons.Default.Explore,
                     contentDescription = "Explore",
                     tint = YtTextPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(17.dp)
                 )
             }
 
-            // Quick Mix / Shuffle Chip (Har refresh / mix par videos nayi tarteeb se mix hon)
+            // Quick Mix / Shuffle Chip
+            val mixShape = RoundedCornerShape(20.dp)
             Box(
                 modifier = Modifier
                     .then(
-                        if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                        if (glassConfig.isEnabled) {
                             Modifier.liquidGlassSurface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = mixShape,
                                 config = glassConfig,
                                 accentColor = appAccentColor,
-                                elevation = 3.dp
+                                elevation = 2.dp
                             )
                         } else {
                             Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(mixShape)
                                 .background(YtSurfaceVariant)
                         }
                     )
                     .clickable { onRefresh() }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
                     .testTag("filter_chip_mix_shuffle"),
                 contentAlignment = Alignment.Center
             ) {
@@ -171,32 +174,37 @@ fun HomeScreen(
 
             filterChips.forEach { chip ->
                 val isSelected = selectedFilter == chip
+                val chipShape = RoundedCornerShape(20.dp)
                 Box(
                     modifier = Modifier
                         .then(
-                            if (glassConfig.isEnabled || glassConfig.neonEnabled) {
+                            if (isSelected) {
+                                Modifier
+                                    .shadow(elevation = 4.dp, shape = chipShape, spotColor = Color(0x40000000))
+                                    .clip(chipShape)
+                                    .background(if (glassConfig.isEnabled) Color.White else YtPillActive)
+                            } else if (glassConfig.isEnabled) {
                                 Modifier.liquidGlassSurface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = chipShape,
                                     config = glassConfig,
-                                    accentColor = if (isSelected) appAccentColor else Color.White,
-                                    elevation = if (isSelected) 5.dp else 2.dp
+                                    elevation = 2.dp
                                 )
                             } else {
                                 Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) YtPillActive else YtPillBackground)
+                                    .clip(chipShape)
+                                    .background(YtPillBackground)
                             }
                         )
                         .clickable { onFilterSelected(chip) }
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
                         .testTag("filter_chip_$chip"),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = chip,
-                        color = if (isSelected && !glassConfig.isEnabled) YtPillActiveText else YtTextPrimary,
+                        color = if (isSelected) Color.Black else YtTextPrimary,
                         fontSize = 13.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )
                 }
             }

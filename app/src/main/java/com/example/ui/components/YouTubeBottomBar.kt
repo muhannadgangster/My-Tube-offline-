@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -71,29 +72,28 @@ fun YouTubeBottomBar(
     val barHeight = customization.navBarHeightDp.dp.coerceAtLeast(46.dp)
     val showLabels = customization.navBarShowLabels
 
-    Column(
+    val dockShape = RoundedCornerShape(32.dp)
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isGlass) {
                     Modifier.liquidGlassSurface(
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        shape = dockShape,
                         config = glassConfig,
                         accentColor = accentColor,
-                        elevation = 10.dp
+                        elevation = 8.dp
                     )
                 } else {
-                    Modifier.background(MaterialTheme.colorScheme.surface)
+                    Modifier
+                        .shadow(elevation = 6.dp, shape = dockShape, spotColor = Color(0x40000000))
+                        .clip(dockShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(0.75.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), dockShape)
                 }
             )
-            .navigationBarsPadding()
     ) {
-        // Thin subtle top border divider
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-            thickness = 0.6.dp
-        )
-
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
@@ -127,7 +127,7 @@ fun YouTubeBottomBar(
             val indicatorShape = when (indicatorStyle) {
                 "Dot Indicator" -> CircleShape
                 "Glow Bar" -> RoundedCornerShape(2.dp)
-                else -> RoundedCornerShape(12.dp)
+                else -> RoundedCornerShape(20.dp)
             }
 
             // Animated sliding glass indicator following selected item

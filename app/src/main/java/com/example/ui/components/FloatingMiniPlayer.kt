@@ -57,6 +57,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.data.VideoItem
 import com.example.ui.theme.LocalAppAccentColor
 import com.example.ui.theme.LocalLiquidGlassConfig
+import com.example.ui.theme.liquidGlassSurface
 import com.example.ui.theme.YtBorder
 import com.example.ui.theme.YtRed
 import com.example.ui.theme.YtSurfaceDark
@@ -82,6 +83,7 @@ fun FloatingMiniPlayer(
     onTogglePlayPause: () -> Unit,
     onExpand: () -> Unit,
     onClose: () -> Unit,
+    onProgressUpdate: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val accentColor = LocalAppAccentColor.current
@@ -98,35 +100,50 @@ fun FloatingMiniPlayer(
     DisposableEffect(video.id) {
         onDispose {
             try {
+                onProgressUpdate(currentPositionMs)
                 miniVideoViewRef?.stopPlayback()
             } catch (_: Exception) {}
         }
     }
 
-    val cardShape = RoundedCornerShape(14.dp)
-    val cardBackground = Color(0xF0141420)
-    val borderBrush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.35f),
-            Color(0x3338BDF8),
-            Color.Black.copy(alpha = 0.6f)
-        )
-    )
+    val cardShape = RoundedCornerShape(22.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .shadow(elevation = 10.dp, shape = cardShape, spotColor = Color(0x66000000))
-            .clip(cardShape)
-            .background(cardBackground)
-            .border(width = 1.dp, brush = borderBrush, shape = cardShape)
+            .then(
+                if (glassConfig.isEnabled) {
+                    Modifier.liquidGlassSurface(
+                        shape = cardShape,
+                        config = glassConfig,
+                        accentColor = accentColor,
+                        elevation = 6.dp
+                    )
+                } else {
+                    Modifier
+                        .shadow(elevation = 6.dp, shape = cardShape, spotColor = Color(0x40000000))
+                        .clip(cardShape)
+                        .background(Color(0xE61A1D27))
+                        .border(
+                            width = 0.75.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.25f),
+                                    Color.White.copy(alpha = 0.06f),
+                                    Color.Black.copy(alpha = 0.35f)
+                                )
+                            ),
+                            shape = cardShape
+                        )
+                }
+            )
             .clickable { onExpand() }
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragStart = { cumulativeDragX = 0f },
                     onDragEnd = {
-                        if (abs(cumulativeDragX) > 160f) {
+                        if (abs(cumulativeDragX) > 140f) {
                             onClose()
                         }
                         cumulativeDragX = 0f
@@ -142,15 +159,15 @@ fun FloatingMiniPlayer(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 6.dp, vertical = 5.dp),
+                .padding(start = 6.dp, end = 6.dp, top = 5.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Mini 16:9 Video Preview on the Left
+            // 1. Mini 16:9 Live Video Preview on the Left with rounded corners
             Box(
                 modifier = Modifier
-                    .height(54.dp)
+                    .height(52.dp)
                     .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
@@ -185,13 +202,16 @@ fun FloatingMiniPlayer(
                                 if (!vv.isPlaying) vv.start()
                             }
                             val cur = vv.currentPosition.toLong()
-                            if (cur > 0) currentPositionMs = cur
+                            if (cur > 0) {
+                                currentPositionMs = cur
+                                onProgressUpdate(cur)
+                            }
                         } catch (_: Exception) {}
                     },
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Fallback crisp thumbnail poster when loading or before video renders
+                // Fallback crisp thumbnail poster while loading or before live frames render
                 if (!isVideoPrepared || video.id.startsWith("sample_")) {
                     VideoThumbnailView(
                         video = video,
@@ -200,28 +220,28 @@ fun FloatingMiniPlayer(
                     )
                 }
 
-                // Subtle Expand indicator overlay in bottom-right corner of preview
+                // Tiny subtle expand pill indicator on top-right of preview
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(3.dp)
                         .size(16.dp)
                         .clip(CircleShape)
-                        .background(Color(0xAA000000)),
+                        .background(Color(0x88000000)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.OpenInFull,
                         contentDescription = "Expand",
                         tint = Color.White,
-                        modifier = Modifier.size(10.dp)
+                        modifier = Modifier.size(9.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // 2. Center: Video Title & Channel Name
+            // 2. Center: Video Title & Channel Information
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -232,7 +252,7 @@ fun FloatingMiniPlayer(
                     text = video.displayTitle,
                     color = YtTextPrimary,
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -241,21 +261,22 @@ fun FloatingMiniPlayer(
                     text = video.displayChannelName,
                     color = YtTextSecondary,
                     fontSize = 11.sp,
+                    fontWeight = FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // 3. Right: Play/Pause and Close buttons
+            // 3. Right: Play/Pause, Expand, and Close controls
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 // Play / Pause Button
                 IconButton(
                     onClick = onTogglePlayPause,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .testTag("mini_player_play_pause")
                 ) {
                     Icon(
@@ -263,6 +284,21 @@ fun FloatingMiniPlayer(
                         contentDescription = if (isPaused) "Play" else "Pause",
                         tint = Color.White,
                         modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Expand Full Player Button
+                IconButton(
+                    onClick = onExpand,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .testTag("mini_player_expand")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.OpenInFull,
+                        contentDescription = "Expand player",
+                        tint = YtTextSecondary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
@@ -277,7 +313,7 @@ fun FloatingMiniPlayer(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close player",
                         tint = YtTextSecondary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
@@ -293,7 +329,8 @@ fun FloatingMiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp)
-                .align(Alignment.BottomCenter),
+                .align(Alignment.BottomCenter)
+                .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp)),
             color = accentColor,
             trackColor = Color.Transparent
         )

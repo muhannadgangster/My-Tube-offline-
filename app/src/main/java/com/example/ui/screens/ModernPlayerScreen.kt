@@ -1,11 +1,16 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.media.MediaPlayer
 import android.net.Uri
 import android.widget.VideoView
 import androidx.activity.compose.BackHandler
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -191,7 +196,36 @@ fun ModernPlayerScreen(
     // Double tap feedback
     var skipFeedbackText by remember { mutableStateOf<String?>(null) }
 
-    // Handle back press - minimize to floating PiP
+    val activity = context as? Activity
+
+    // Fullscreen Immersive Mode & Landscape Rotation handler (fixes clipping, sizing and system-bar issues)
+    LaunchedEffect(isFullscreen) {
+        activity?.let { act ->
+            val window = act.window
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            if (isFullscreen) {
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.let { act ->
+                val window = act.window
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+        }
+    }
+
+    // Handle back press - exit fullscreen or minimize to floating PiP
     BackHandler {
         if (isFullscreen) {
             isFullscreen = false
@@ -1553,6 +1587,7 @@ fun ModernPlayerScreen(
     DisposableEffect(video.id) {
         onDispose {
             try {
+                onProgressUpdate(currentPositionMs)
                 videoViewRef?.stopPlayback()
             } catch (_: Exception) {}
         }

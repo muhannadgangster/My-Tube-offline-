@@ -480,6 +480,9 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun recordProgress(video: VideoItem, positionMs: Long) {
+        if (_currentlyPlaying.value?.id == video.id) {
+            _currentlyPlaying.value = _currentlyPlaying.value?.copy(watchPositionMs = positionMs)
+        }
         if (!settingsManager.pauseHistory.value) {
             viewModelScope.launch {
                 repository.recordWatchProgress(video.id, positionMs)

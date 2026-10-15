@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
@@ -434,7 +435,10 @@ fun MyTubeApp(
                 },
                 bottomBar = {
                     androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(bottom = 4.dp)
                     ) {
                         AnimatedVisibility(
                             visible = currentlyPlaying != null && isPlayerMinimized,
@@ -448,15 +452,19 @@ fun MyTubeApp(
                                     onTogglePlayPause = { viewModel.togglePlaybackPaused() },
                                     onExpand = { viewModel.expandPlayer() },
                                     onClose = { viewModel.closePlayer() },
+                                    onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        .padding(horizontal = 14.dp, vertical = 3.dp)
                                 )
                             }
                         }
                         YouTubeBottomBar(
                             selectedTab = selectedTab,
-                            onTabSelected = { viewModel.selectTab(it) }
+                            onTabSelected = { viewModel.selectTab(it) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
                         )
                     }
                 }

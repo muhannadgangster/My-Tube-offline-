@@ -143,37 +143,16 @@ fun Modifier.liquidGlassSurface(
         return this
     }
 
-    val alpha = (1f - config.transparency.coerceIn(0.2f, 0.92f))
     val isDark = config.isDarkGlass
 
+    // 1. Transparent optical glass material - background content remains sharp & visible through glass
     val baseGlassColor = if (isDark) {
-        Color(0xFF0F172A).copy(alpha = alpha.coerceIn(0.25f, 0.88f))
+        Color(0x35141928) // Translucent neutral glass (~21% tint)
     } else {
-        Color(0xFFF8FAFC).copy(alpha = alpha.coerceIn(0.35f, 0.92f))
+        Color(0x55FFFFFF) // Translucent pearl glass
     }
 
-    val rimHighlightColor = if (isDark) {
-        Color.White.copy(alpha = (0.45f * config.refractionIntensity).coerceIn(0.12f, 0.7f))
-    } else {
-        Color.White.copy(alpha = (0.75f * config.refractionIntensity).coerceIn(0.25f, 0.9f))
-    }
-
-    val bottomShadowColor = if (isDark) {
-        Color.Black.copy(alpha = 0.55f)
-    } else {
-        Color(0xFF64748B).copy(alpha = 0.22f)
-    }
-
-    // Border: luminous optical glass or neon
-    val borderColor = if (config.neonEnabled) {
-        Color(config.neonColorHex).copy(alpha = (0.85f * config.neonIntensity).coerceIn(0.3f, 1f))
-    } else if (isDark) {
-        Color(0xFF38BDF8).copy(alpha = (0.35f * config.glassIntensity).coerceIn(0.15f, 0.6f))
-    } else {
-        Color(0xFF94A3B8).copy(alpha = (0.45f * config.glassIntensity).coerceIn(0.15f, 0.6f))
-    }
-
-    val shadowElevation = if (config.isEnabled) elevation else 0.dp
+    val shadowElevation = if (config.isEnabled) elevation.coerceAtMost(8.dp) else 0.dp
 
     return this
         .then(
@@ -182,30 +161,30 @@ fun Modifier.liquidGlassSurface(
                     elevation = shadowElevation,
                     shape = shape,
                     clip = false,
-                    ambientColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x33000000),
-                    spotColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x66000000)
+                    ambientColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x22000000),
+                    spotColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x38000000)
                 )
             } else Modifier
         )
         .clip(shape)
         .drawBehind {
-            // 1. Base translucent glass material background
+            // 1. Base translucent glass material
             drawRect(color = baseGlassColor)
 
             if (config.isEnabled && config.specularHighlight) {
-                // 2. Optical specular sheen (Apple iOS Liquid Glass style) across top-left quadrant
+                // 2. Optical specular sheen (Apple iOS Liquid Glass style) across top quadrant
                 val specularBrush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = (0.28f * config.refractionIntensity).coerceIn(0.08f, 0.45f)),
-                        Color.White.copy(alpha = (0.08f * config.refractionIntensity).coerceIn(0.02f, 0.20f)),
+                        Color.White.copy(alpha = (0.22f * config.refractionIntensity).coerceIn(0.06f, 0.35f)),
+                        Color.White.copy(alpha = (0.05f * config.refractionIntensity).coerceIn(0.01f, 0.12f)),
                         Color.Transparent
                     ),
                     start = Offset(0f, 0f),
-                    end = Offset(size.width * 0.75f, size.height * 0.55f)
+                    end = Offset(size.width * 0.70f, size.height * 0.50f)
                 )
                 drawRect(
                     brush = specularBrush,
-                    size = Size(size.width, size.height * 0.65f)
+                    size = Size(size.width, size.height * 0.60f)
                 )
 
                 // 3. Subtle luminous bevel line along top rim
@@ -213,18 +192,17 @@ fun Modifier.liquidGlassSurface(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.White.copy(alpha = (0.50f * config.refractionIntensity).coerceIn(0.15f, 0.70f)),
-                            Color.White.copy(alpha = (0.20f * config.refractionIntensity).coerceIn(0.05f, 0.35f)),
+                            Color.White.copy(alpha = (0.40f * config.refractionIntensity).coerceIn(0.10f, 0.55f)),
                             Color.Transparent
                         )
                     ),
-                    start = Offset(size.width * 0.04f, 1f),
-                    end = Offset(size.width * 0.96f, 1f),
-                    strokeWidth = 1.2.dp.toPx()
+                    start = Offset(size.width * 0.08f, 1f),
+                    end = Offset(size.width * 0.92f, 1f),
+                    strokeWidth = 0.8.dp.toPx()
                 )
             }
 
-            // 4. Optional neon edge ambient glow
+            // 4. Optional neon edge ambient glow (only if user explicitly activated Neon Lights)
             if (config.neonEnabled) {
                 val neonGlowColor = Color(config.neonColorHex).copy(alpha = 0.18f * config.neonIntensity)
                 drawRect(
@@ -237,7 +215,7 @@ fun Modifier.liquidGlassSurface(
             }
         }
         .border(
-            width = (config.borderThicknessDp.dp).coerceAtLeast(0.6.dp),
+            width = if (config.neonEnabled) 1.dp else 0.75.dp,
             brush = if (config.neonEnabled) {
                 Brush.sweepGradient(
                     listOf(
@@ -248,11 +226,12 @@ fun Modifier.liquidGlassSurface(
                     )
                 )
             } else {
+                // Refined optical crystal glass bevel reflection: fine white specular highlight on top fading to crystal rim
                 Brush.linearGradient(
                     colors = listOf(
-                        rimHighlightColor,
-                        borderColor,
-                        bottomShadowColor
+                        Color.White.copy(alpha = 0.32f),
+                        Color.White.copy(alpha = 0.08f),
+                        Color.Black.copy(alpha = 0.25f)
                     ),
                     start = Offset(0f, 0f),
                     end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)

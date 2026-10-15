@@ -547,7 +547,7 @@ class SettingsManager(context: Context) {
     private val _homeCardPadding = MutableStateFlow(prefs.getFloat("home_card_padding", 8f))
     val homeCardPadding: StateFlow<Float> = _homeCardPadding.asStateFlow()
 
-    private val _homeGlassCards = MutableStateFlow(prefs.getBoolean("home_glass_cards", true))
+    private val _homeGlassCards = MutableStateFlow(prefs.getBoolean("home_glass_cards", false))
     val homeGlassCards: StateFlow<Boolean> = _homeGlassCards.asStateFlow()
 
     // B. Shorts Screen Customization

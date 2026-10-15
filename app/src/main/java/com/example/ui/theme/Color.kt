@@ -32,24 +32,24 @@ val YtLightTextPrimary = Color(0xFF0F0F0F)
 val YtLightTextSecondary = Color(0xFF606060)
 val YtLightBorder = Color(0xFFE5E5E5)
 
-// Liquid Glass (Dark) Palette - Frosted Glass on Midnight
-val YtGlassDarkBackground = Color(0xFF070B14)
-val YtGlassDarkSurface = Color(0xD9101726)
-val YtGlassDarkSurfaceVariant = Color(0xB31C283E)
-val YtGlassDarkBorder = Color(0x4438BDF8)
-val YtGlassDarkHighlight = Color(0x2238BDF8)
+// Liquid Glass (Dark) Palette - Authentic Optical Liquid Glass
+val YtGlassDarkBackground = Color(0xFF0C0D12)
+val YtGlassDarkSurface = Color(0x351E2436)
+val YtGlassDarkSurfaceVariant = Color(0x28FFFFFF)
+val YtGlassDarkBorder = Color(0x2AFFFFFF)
+val YtGlassDarkHighlight = Color(0x40FFFFFF)
 
-// Liquid Glass (Light) Palette - Frosted Milky Glass on Pearl
-val YtGlassLightBackground = Color(0xFFEBF1F7)
-val YtGlassLightSurface = Color(0xDDF8FAFC)
-val YtGlassLightSurfaceVariant = Color(0xCCE2E8F0)
+// Liquid Glass (Light) Palette - Frosted Milky Glass
+val YtGlassLightBackground = Color(0xFFF3F5F9)
+val YtGlassLightSurface = Color(0x60F8FAFC)
+val YtGlassLightSurfaceVariant = Color(0x40FFFFFF)
 val YtGlassLightTextPrimary = Color(0xFF0F172A)
 val YtGlassLightTextSecondary = Color(0xFF475569)
-val YtGlassLightBorder = Color(0x6694A3B8)
+val YtGlassLightBorder = Color(0x33000000)
 
-// Liquid Glass with Reflection - Iridescent Specular Highlighting
-val YtGlassReflectBackground = Color(0xFF03050B)
-val YtGlassReflectSurface = Color(0xE60D1524)
-val YtGlassReflectSurfaceVariant = Color(0xCC182338)
-val YtGlassReflectBorder = Color(0x6638BDF8)
-val YtGlassReflectSheen = Color(0x44E0F2FE)
+// Liquid Glass with Reflection - Optical Crystal Highlighting
+val YtGlassReflectBackground = Color(0xFF090A10)
+val YtGlassReflectSurface = Color(0x40182032)
+val YtGlassReflectSurfaceVariant = Color(0x30FFFFFF)
+val YtGlassReflectBorder = Color(0x38FFFFFF)
+val YtGlassReflectSheen = Color(0x55FFFFFF)
