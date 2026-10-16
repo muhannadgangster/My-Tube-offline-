@@ -101,7 +101,7 @@ fun CustomPageEditorScreen(
     val accentColor = LocalAppAccentColor.current
     val glassConfig = LocalLiquidGlassConfig.current
     val currentTheme = LocalUiTheme.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val isGlass = glassConfig.isEnabled
 
     val existingPage = pageId?.let { interfaceBuilderManager.getCustomPage(it) }
 

@@ -79,7 +79,7 @@ fun VideoFeedCard(
     val currentTheme = LocalUiTheme.current
     val glassConfig = LocalLiquidGlassConfig.current
     val customization = LocalUiCustomization.current
-    val isGlass = (currentTheme.contains("Liquid Glass") || glassConfig.isEnabled) && customization.homeGlassCards
+    val isGlass = glassConfig.isEnabled && customization.homeGlassCards
     val cardRadius = customization.homeCardCornerRadiusDp.dp
     val cardPadding = customization.homeCardPaddingDp.dp
     val cardSpacing = customization.homeCardSpacingDp.dp

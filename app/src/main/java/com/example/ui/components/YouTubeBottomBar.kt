@@ -66,7 +66,7 @@ fun YouTubeBottomBar(
     val accentColor = LocalAppAccentColor.current
     val glassConfig = LocalLiquidGlassConfig.current
     val customization = LocalUiCustomization.current
-    val isGlass = (currentTheme.contains("Liquid Glass") || glassConfig.isEnabled) && customization.navBarGlassEnabled
+    val isGlass = glassConfig.isEnabled && customization.navBarGlassEnabled
     val activeColor = accentColor
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
     val barHeight = customization.navBarHeightDp.dp.coerceAtLeast(46.dp)

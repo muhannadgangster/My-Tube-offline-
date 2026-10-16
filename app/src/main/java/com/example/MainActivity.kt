@@ -3,9 +3,18 @@ package com.example
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -54,6 +63,8 @@ import com.example.ui.components.CreateClipDialog
 import com.example.ui.components.EditProfileDialog
 import com.example.ui.components.FloatingMiniPlayer
 import com.example.ui.components.NotificationsSheet
+import com.example.ui.components.PipVideoPlayer
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.example.ui.components.PlusModalSheet
 import com.example.ui.components.RenameTitleDialog
 import com.example.ui.components.YouTubeBottomBar
@@ -79,11 +90,148 @@ import com.example.ui.viewmodel.YouTubeViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var viewModelRef: YouTubeViewModel? = null
+    private val _isInPipMode = MutableStateFlow(false)
+
+    companion object {
+        const val ACTION_PIP_PLAY_PAUSE = "com.example.mytube.ACTION_PIP_PLAY_PAUSE"
+    }
+
+    private val pipReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_PIP_PLAY_PAUSE) {
+                viewModelRef?.togglePlaybackPaused()
+                updatePipActions()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(pipReceiver)
+        } catch (_: Exception) {}
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val isPaused = viewModelRef?.isPlaybackPaused?.value ?: true
+        val hasVideo = viewModelRef?.currentlyPlaying?.value != null
+        if (hasVideo && !isPaused) {
+            enterPipMode()
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        _isInPipMode.value = isInPictureInPictureMode
+        if (!isInPictureInPictureMode) {
+            updatePipActions()
+        }
+    }
+
+    fun enterPipMode(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+                return false
+            }
+            val hasVideo = viewModelRef?.currentlyPlaying?.value != null
+            if (!hasVideo) return false
+            val isPaused = viewModelRef?.isPlaybackPaused?.value ?: false
+
+            val playPauseIntent = Intent(ACTION_PIP_PLAY_PAUSE).setPackage(packageName)
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                1001,
+                playPauseIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val icon = Icon.createWithResource(
+                this,
+                if (isPaused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+            )
+            val title = if (isPaused) "Play" else "Pause"
+            val action = RemoteAction(icon, title, title, pendingIntent)
+
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .setActions(listOf(action))
+                .apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        setAutoEnterEnabled(true)
+                        setSeamlessResizeEnabled(true)
+                    }
+                }
+                .build()
+            return try {
+                enterPictureInPictureMode(params)
+            } catch (_: Exception) {
+                false
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            @Suppress("DEPRECATION")
+            return try {
+                enterPictureInPictureMode()
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return false
+    }
+
+    fun updatePipActions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val hasVideo = viewModelRef?.currentlyPlaying?.value != null
+            if (!hasVideo) return
+            val isPaused = viewModelRef?.isPlaybackPaused?.value ?: false
+
+            val playPauseIntent = Intent(ACTION_PIP_PLAY_PAUSE).setPackage(packageName)
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                1001,
+                playPauseIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val icon = Icon.createWithResource(
+                this,
+                if (isPaused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+            )
+            val title = if (isPaused) "Play" else "Pause"
+            val action = RemoteAction(icon, title, title, pendingIntent)
+
+            val builder = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .setActions(listOf(action))
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                builder.setAutoEnterEnabled(!isPaused)
+                builder.setSeamlessResizeEnabled(true)
+            }
+
+            try {
+                setPictureInPictureParams(builder.build())
+            } catch (_: Exception) {}
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val filter = IntentFilter(ACTION_PIP_PLAY_PAUSE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(pipReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(pipReceiver, filter)
+        }
         setContent {
             val viewModel: YouTubeViewModel = viewModel()
+            viewModelRef = viewModel
+            val isInPipMode by _isInPipMode.collectAsStateWithLifecycle()
             val uiTheme by viewModel.settingsManager.uiTheme.collectAsStateWithLifecycle()
             val customAccentColorHex by viewModel.settingsManager.customAccentColorHex.collectAsStateWithLifecycle()
 
@@ -171,7 +319,11 @@ class MainActivity : ComponentActivity() {
                 liquidGlassConfig = glassConfig,
                 uiCustomization = uiCustomization
             ) {
-                MyTubeApp(viewModel = viewModel)
+                MyTubeApp(
+                    viewModel = viewModel,
+                    isInPipMode = isInPipMode,
+                    onEnterPip = { enterPipMode() }
+                )
             }
         }
     }
@@ -180,7 +332,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MyTubeApp(
     viewModel: YouTubeViewModel = viewModel(),
-    mediaScannerViewModel: MediaScannerViewModel = viewModel()
+    mediaScannerViewModel: MediaScannerViewModel = viewModel(),
+    isInPipMode: Boolean = false,
+    onEnterPip: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -276,8 +430,19 @@ fun MyTubeApp(
         context.startActivity(Intent.createChooser(shareIntent, "Share video"))
     }
 
+    val lgMaster by viewModel.settingsManager.liquidGlassMaster.collectAsStateWithLifecycle()
     val hasCustomWallpaper = !customBackgroundUri.isNullOrBlank()
-    val isGlassTheme = currentUiTheme.contains("Liquid Glass")
+    val isGlassTheme = lgMaster && currentUiTheme.contains("Liquid Glass")
+
+    if (isInPipMode && currentlyPlaying != null) {
+        PipVideoPlayer(
+            video = currentlyPlaying!!,
+            isPaused = isPlaybackPaused,
+            onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
+            modifier = Modifier.fillMaxSize()
+        )
+        return
+    }
 
     Box(
         modifier = Modifier
@@ -393,6 +558,7 @@ fun MyTubeApp(
                 onSelectUpNext = { nextVideo -> viewModel.playVideo(nextVideo) },
                 onShortClick = { shortVideo -> viewModel.openShortsAt(shortVideo) },
                 onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
+                onEnterPip = onEnterPip,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -453,6 +619,7 @@ fun MyTubeApp(
                                     onExpand = { viewModel.expandPlayer() },
                                     onClose = { viewModel.closePlayer() },
                                     onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
+                                    onEnterPip = onEnterPip,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 14.dp, vertical = 3.dp)

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -592,7 +593,11 @@ fun SettingsScreen(
                     checked = lgMaster,
                     onCheckedChange = { isEnabled ->
                         settingsManager.setLiquidGlassMaster(isEnabled)
-                        showRestartDialog = true
+                        Toast.makeText(
+                            context,
+                            if (isEnabled) "Liquid Glass Mode Enabled ✨" else "Liquid Glass Mode Disabled (Conventional UI)",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             }

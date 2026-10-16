@@ -96,7 +96,7 @@ fun NotificationsSheet(
 
     val glassConfig = LocalLiquidGlassConfig.current
     val currentTheme = LocalUiTheme.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val isGlass = glassConfig.isEnabled
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,

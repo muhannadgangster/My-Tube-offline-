@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,6 +85,7 @@ fun FloatingMiniPlayer(
     onExpand: () -> Unit,
     onClose: () -> Unit,
     onProgressUpdate: (Long) -> Unit = {},
+    onEnterPip: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val accentColor = LocalAppAccentColor.current
@@ -284,6 +286,24 @@ fun FloatingMiniPlayer(
                         contentDescription = if (isPaused) "Play" else "Pause",
                         tint = Color.White,
                         modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Native Android Picture-in-Picture Button
+                IconButton(
+                    onClick = {
+                        onProgressUpdate(currentPositionMs)
+                        onEnterPip?.invoke()
+                    },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .testTag("mini_player_pip")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PictureInPictureAlt,
+                        contentDescription = "Picture in Picture",
+                        tint = YtTextSecondary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 

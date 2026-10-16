@@ -181,7 +181,8 @@ fun CustomizeInterfaceScreen(
     val accentColor = LocalAppAccentColor.current
     val glassConfig = LocalLiquidGlassConfig.current
     val currentTheme = LocalUiTheme.current
-    val isGlassTheme = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val lgMaster by settingsManager.liquidGlassMaster.collectAsStateWithLifecycle()
+    val isGlassTheme = lgMaster
 
     // State collections from InterfaceBuilderManager
     val customIcons by interfaceBuilderManager.customIcons.collectAsStateWithLifecycle()
@@ -314,6 +315,97 @@ fun CustomizeInterfaceScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             modifier = Modifier.statusBarsPadding()
         )
+
+        // Clearly Visible Setting: Settings -> Customize Interface -> Liquid Glass Mode
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .then(
+                    if (lgMaster) {
+                        Modifier.liquidGlassSurface(
+                            shape = RoundedCornerShape(16.dp),
+                            config = glassConfig,
+                            accentColor = accentColor,
+                            elevation = 6.dp
+                        )
+                    } else {
+                        Modifier
+                            .background(YtSurfaceDark)
+                            .border(1.dp, YtBorder, RoundedCornerShape(16.dp))
+                    }
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if (lgMaster) accentColor.copy(alpha = 0.22f) else YtSurfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = "Liquid Glass Mode",
+                        tint = if (lgMaster) accentColor else YtTextSecondary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Liquid Glass Mode",
+                            color = YtTextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (lgMaster) accentColor.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (lgMaster) "ON ✨" else "OFF",
+                                color = if (lgMaster) accentColor else YtTextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Text(
+                        text = if (lgMaster) "iOS optical glass & reflections active" else "Conventional interface active",
+                        color = YtTextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+                Switch(
+                    checked = lgMaster,
+                    onCheckedChange = { isChecked ->
+                        settingsManager.setLiquidGlassMaster(isChecked)
+                        Toast.makeText(
+                            context,
+                            if (isChecked) "Liquid Glass Mode Enabled ✨" else "Liquid Glass Mode Disabled (Conventional UI)",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = accentColor,
+                        uncheckedThumbColor = YtTextSecondary,
+                        uncheckedTrackColor = YtSurfaceVariant
+                    ),
+                    modifier = Modifier.testTag("switch_liquid_glass_mode")
+                )
+            }
+        }
 
         // Category Tabs (Only shown when on the main menu, not in drill-down)
         if (activeBuilderSection == null) {

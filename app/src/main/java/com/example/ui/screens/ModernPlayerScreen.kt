@@ -67,6 +67,7 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -151,6 +152,7 @@ fun ModernPlayerScreen(
     onShortClick: ((VideoItem) -> Unit)? = null,
     onProgressUpdate: (Long) -> Unit,
     onMinimize: (() -> Unit)? = null,
+    onEnterPip: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -566,6 +568,21 @@ fun ModernPlayerScreen(
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
+
+                        // Top-right: Picture-in-Picture icon
+                        IconButton(
+                            onClick = {
+                                onProgressUpdate(currentPositionMs)
+                                onEnterPip?.invoke()
+                            },
+                            modifier = Modifier.testTag("player_pip_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PictureInPictureAlt,
+                                contentDescription = "Picture-in-Picture",
+                                tint = Color.White
+                            )
+                        }
 
                         // Top-right: Cast icon
                         IconButton(

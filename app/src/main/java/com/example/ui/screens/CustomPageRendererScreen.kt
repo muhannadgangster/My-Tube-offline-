@@ -85,7 +85,7 @@ fun CustomPageRendererScreen(
     val accentColor = LocalAppAccentColor.current
     val glassConfig = LocalLiquidGlassConfig.current
     val currentTheme = LocalUiTheme.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled || page.isGlassTheme
+    val isGlass = glassConfig.isEnabled && (page.isGlassTheme || currentTheme.contains("Liquid Glass"))
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 

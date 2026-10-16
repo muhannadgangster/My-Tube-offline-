@@ -91,7 +91,7 @@ fun LibraryScreen(
     val currentTheme = LocalUiTheme.current
     val appAccent = LocalAppAccentColor.current
     val customization = com.example.ui.theme.LocalUiCustomization.current
-    val isGlass = currentTheme.contains("Liquid Glass") || glassConfig.isEnabled
+    val isGlass = glassConfig.isEnabled
     val avatarRadius = customization.profileAvatarCornerRadius
     val avatarShape = if (avatarRadius >= 45f) CircleShape else RoundedCornerShape((avatarRadius * 0.45f).dp)
 

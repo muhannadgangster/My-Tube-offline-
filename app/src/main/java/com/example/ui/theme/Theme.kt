@@ -210,13 +210,14 @@ fun MyApplicationTheme(
         YtRed
     }
 
-    val isGlassTheme = uiTheme.contains("Liquid Glass") || liquidGlassConfig.isEnabled
+    val isGlassTheme = liquidGlassConfig.isEnabled && (uiTheme.contains("Liquid Glass") || liquidGlassConfig.isEnabled)
 
     val baseColorScheme = when {
         uiTheme == "Light Mode" -> YouTubeLightColorScheme
-        uiTheme == "Liquid Glass (Light)" -> LiquidGlassLightColorScheme
-        uiTheme == "Liquid Glass (Dark)" -> LiquidGlassDarkColorScheme
+        uiTheme == "Liquid Glass (Light)" && liquidGlassConfig.isEnabled -> LiquidGlassLightColorScheme
+        uiTheme == "Liquid Glass (Dark)" && liquidGlassConfig.isEnabled -> LiquidGlassDarkColorScheme
         isGlassTheme -> LiquidGlassReflectColorScheme
+        uiTheme.contains("Light") -> YouTubeLightColorScheme
         else -> YouTubeDarkColorScheme
     }
 
@@ -229,7 +230,7 @@ fun MyApplicationTheme(
         LocalUiTheme provides uiTheme,
         LocalAppAccentColor provides activeAccentColor,
         LocalLiquidGlassConfig provides liquidGlassConfig.copy(
-            isEnabled = liquidGlassConfig.isEnabled && (isGlassTheme || liquidGlassConfig.isEnabled),
+            isEnabled = liquidGlassConfig.isEnabled,
             isDarkGlass = uiTheme != "Liquid Glass (Light)" && uiTheme != "Light Mode"
         ),
         LocalUiCustomization provides uiCustomization
