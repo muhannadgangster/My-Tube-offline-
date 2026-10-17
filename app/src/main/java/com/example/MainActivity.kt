@@ -600,40 +600,14 @@ fun MyTubeApp(
                     }
                 },
                 bottomBar = {
-                    androidx.compose.foundation.layout.Column(
+                    YouTubeBottomBar(
+                        selectedTab = selectedTab,
+                        onTabSelected = { viewModel.selectTab(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .padding(bottom = 4.dp)
-                    ) {
-                        AnimatedVisibility(
-                            visible = currentlyPlaying != null && isPlayerMinimized,
-                            enter = slideInVertically { it } + fadeIn(),
-                            exit = slideOutVertically { it } + fadeOut()
-                        ) {
-                            if (currentlyPlaying != null) {
-                                FloatingMiniPlayer(
-                                    video = currentlyPlaying!!,
-                                    isPaused = isPlaybackPaused,
-                                    onTogglePlayPause = { viewModel.togglePlaybackPaused() },
-                                    onExpand = { viewModel.expandPlayer() },
-                                    onClose = { viewModel.closePlayer() },
-                                    onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
-                                    onEnterPip = onEnterPip,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                        YouTubeBottomBar(
-                            selectedTab = selectedTab,
-                            onTabSelected = { viewModel.selectTab(it) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
-                    }
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
             ) { paddingValues ->
                 Box(
@@ -912,6 +886,20 @@ fun MyTubeApp(
                 onOpenAnotherPage = { pageId ->
                     viewModel.openCustomPageById(pageId)
                 },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // YouTube-Style Floating Draggable Mini Video Player (Floating on top of ALL screens)
+        if (currentlyPlaying != null && isPlayerMinimized && !isInPipMode) {
+            FloatingMiniPlayer(
+                video = currentlyPlaying!!,
+                isPaused = isPlaybackPaused,
+                onTogglePlayPause = { viewModel.togglePlaybackPaused() },
+                onExpand = { viewModel.expandPlayer() },
+                onClose = { viewModel.closePlayer() },
+                onProgressUpdate = { pos -> viewModel.recordProgress(currentlyPlaying!!, pos) },
+                onEnterPip = onEnterPip,
                 modifier = Modifier.fillMaxSize()
             )
         }

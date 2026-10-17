@@ -218,6 +218,7 @@ fun ModernPlayerScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            onProgressUpdate(currentPositionMs)
             activity?.let { act ->
                 val window = act.window
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)

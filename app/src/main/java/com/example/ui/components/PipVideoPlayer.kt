@@ -53,6 +53,7 @@ fun PipVideoPlayer(
         AndroidView(
             factory = { ctx ->
                 VideoView(ctx).apply {
+                    tag = video.id
                     try {
                         setOnErrorListener { _, _, _ -> true }
                         if (!video.id.startsWith("sample_")) {
@@ -74,6 +75,17 @@ fun PipVideoPlayer(
             },
             update = { vv ->
                 videoViewRef = vv
+                val currentTag = vv.tag as? String
+                if (currentTag != video.id) {
+                    vv.tag = video.id
+                    isPrepared = false
+                    try {
+                        vv.stopPlayback()
+                        if (!video.id.startsWith("sample_")) {
+                            vv.setVideoURI(Uri.parse(video.uriString))
+                        }
+                    } catch (_: Exception) {}
+                }
                 try {
                     if (isPaused) {
                         if (vv.isPlaying) vv.pause()
