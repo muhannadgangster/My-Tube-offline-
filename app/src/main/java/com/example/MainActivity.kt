@@ -243,6 +243,25 @@ class MainActivity : ComponentActivity() {
             val lgRefraction by viewModel.settingsManager.liquidGlassRefraction.collectAsStateWithLifecycle()
             val lgSpecular by viewModel.settingsManager.liquidGlassSpecular.collectAsStateWithLifecycle()
             val lgBorderThickness by viewModel.settingsManager.liquidGlassBorderThickness.collectAsStateWithLifecycle()
+            val lgCornerRadius by viewModel.settingsManager.liquidGlassCornerRadius.collectAsStateWithLifecycle()
+            val lgRefractionHeight by viewModel.settingsManager.liquidGlassRefractionHeight.collectAsStateWithLifecycle()
+            val lgLayerRefraction by viewModel.settingsManager.liquidGlassLayerRefraction.collectAsStateWithLifecycle()
+            val lgDepthEnabled by viewModel.settingsManager.liquidGlassDepthEnabled.collectAsStateWithLifecycle()
+            val lgVibrancy by viewModel.settingsManager.liquidGlassVibrancy.collectAsStateWithLifecycle()
+            val lgEdgeHighlights by viewModel.settingsManager.liquidGlassEdgeHighlights.collectAsStateWithLifecycle()
+            val lgReflection by viewModel.settingsManager.liquidGlassReflection.collectAsStateWithLifecycle()
+            val lgTintColorHex by viewModel.settingsManager.liquidGlassTintColorHex.collectAsStateWithLifecycle()
+            val lgShadowElevation by viewModel.settingsManager.liquidGlassShadowElevation.collectAsStateWithLifecycle()
+            val lgAnimIntensity by viewModel.settingsManager.liquidGlassAnimationIntensity.collectAsStateWithLifecycle()
+            val lgPerfMode by viewModel.settingsManager.liquidGlassPerformanceMode.collectAsStateWithLifecycle()
+
+            val subGlassEnabled by viewModel.settingsManager.subscribeGlassEnabled.collectAsStateWithLifecycle()
+            val subGlassTintHex by viewModel.settingsManager.subscribeGlassTintHex.collectAsStateWithLifecycle()
+            val subTransparency by viewModel.settingsManager.subscribeTransparency.collectAsStateWithLifecycle()
+            val subCornerRadius by viewModel.settingsManager.subscribeCornerRadius.collectAsStateWithLifecycle()
+            val subDepth by viewModel.settingsManager.subscribeDepth.collectAsStateWithLifecycle()
+            val subRefraction by viewModel.settingsManager.subscribeRefraction.collectAsStateWithLifecycle()
+            val subEdgeHighlight by viewModel.settingsManager.subscribeEdgeHighlight.collectAsStateWithLifecycle()
 
             val neonMaster by viewModel.settingsManager.neonLightsMaster.collectAsStateWithLifecycle()
             val neonColorHex by viewModel.settingsManager.neonColorHex.collectAsStateWithLifecycle()
@@ -257,9 +276,22 @@ class MainActivity : ComponentActivity() {
 
             val glassConfig = com.example.ui.theme.LiquidGlassStyleConfig(
                 isEnabled = lgMaster,
-                glassIntensity = lgIntensity,
-                blurRadius = lgBlur,
                 transparency = lgTransparency,
+                blurRadius = lgBlur,
+                cornerRadiusDp = lgCornerRadius,
+                refractionHeight = lgRefractionHeight,
+                refractionAmount = lgRefraction,
+                layerRefraction = lgLayerRefraction,
+                depthEnabled = lgDepthEnabled,
+                vibrancy = lgVibrancy,
+                edgeHighlights = lgEdgeHighlights,
+                glassThickness = lgBorderThickness,
+                reflectionIntensity = lgReflection,
+                glassTintColorHex = lgTintColorHex,
+                shadowElevationDp = lgShadowElevation,
+                animationIntensity = lgAnimIntensity,
+                performanceMode = lgPerfMode,
+                glassIntensity = lgIntensity,
                 refractionIntensity = lgRefraction,
                 specularHighlight = lgSpecular,
                 borderThicknessDp = lgBorderThickness,
@@ -272,7 +304,14 @@ class MainActivity : ComponentActivity() {
                 neonColorHex = neonColorHex,
                 neonIntensity = neonIntensity,
                 neonAnimated = neonAnimated,
-                neonAnimationSpeed = neonSpeed
+                neonAnimationSpeed = neonSpeed,
+                subscribeGlassEnabled = subGlassEnabled,
+                subscribeGlassTintHex = subGlassTintHex,
+                subscribeTransparency = subTransparency,
+                subscribeCornerRadius = subCornerRadius,
+                subscribeDepth = subDepth,
+                subscribeRefraction = subRefraction,
+                subscribeEdgeHighlight = subEdgeHighlight
             )
 
             val homeCardCornerRadius by viewModel.settingsManager.homeCardCornerRadius.collectAsStateWithLifecycle()
@@ -714,7 +753,12 @@ fun MyTubeApp(
                                 },
                                 onRemixClick = { viewModel.setShortsCameraOpen(true) },
                                 onEditTitle = { viewModel.openRenameDialog(it) },
-                                onShare = { shareVideo(it) }
+                                onShare = { shareVideo(it) },
+                                onSearchClick = { viewModel.setSearchActive(true) },
+                                onCameraClick = { viewModel.setShortsCameraOpen(true) },
+                                onNotificationsClick = { viewModel.setNotificationsSheetOpen(true) },
+                                unreadNotificationCount = unreadNotificationCount,
+                                onToggleDownload = { viewModel.toggleDownloaded(it) }
                             )
 
                             3 -> SubscriptionsScreen(

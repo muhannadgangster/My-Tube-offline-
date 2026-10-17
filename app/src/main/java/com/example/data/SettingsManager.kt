@@ -411,6 +411,61 @@ class SettingsManager(context: Context) {
     private val _liquidGlassBorderThickness = MutableStateFlow(prefs.getFloat("lg_border_thickness", 1.0f))
     val liquidGlassBorderThickness: StateFlow<Float> = _liquidGlassBorderThickness.asStateFlow()
 
+    private val _liquidGlassCornerRadius = MutableStateFlow(prefs.getFloat("lg_corner_radius", 16f))
+    val liquidGlassCornerRadius: StateFlow<Float> = _liquidGlassCornerRadius.asStateFlow()
+
+    private val _liquidGlassRefractionHeight = MutableStateFlow(prefs.getFloat("lg_refraction_height", 0.65f))
+    val liquidGlassRefractionHeight: StateFlow<Float> = _liquidGlassRefractionHeight.asStateFlow()
+
+    private val _liquidGlassLayerRefraction = MutableStateFlow(prefs.getBoolean("lg_layer_refraction", true))
+    val liquidGlassLayerRefraction: StateFlow<Boolean> = _liquidGlassLayerRefraction.asStateFlow()
+
+    private val _liquidGlassDepthEnabled = MutableStateFlow(prefs.getBoolean("lg_depth_enabled", true))
+    val liquidGlassDepthEnabled: StateFlow<Boolean> = _liquidGlassDepthEnabled.asStateFlow()
+
+    private val _liquidGlassVibrancy = MutableStateFlow(prefs.getFloat("lg_vibrancy", 0.85f))
+    val liquidGlassVibrancy: StateFlow<Float> = _liquidGlassVibrancy.asStateFlow()
+
+    private val _liquidGlassEdgeHighlights = MutableStateFlow(prefs.getFloat("lg_edge_highlights", 0.80f))
+    val liquidGlassEdgeHighlights: StateFlow<Float> = _liquidGlassEdgeHighlights.asStateFlow()
+
+    private val _liquidGlassReflection = MutableStateFlow(prefs.getFloat("lg_reflection", 0.75f))
+    val liquidGlassReflection: StateFlow<Float> = _liquidGlassReflection.asStateFlow()
+
+    private val _liquidGlassTintColorHex = MutableStateFlow(prefs.getLong("lg_tint_color_hex", 0x35141928L))
+    val liquidGlassTintColorHex: StateFlow<Long> = _liquidGlassTintColorHex.asStateFlow()
+
+    private val _liquidGlassShadowElevation = MutableStateFlow(prefs.getFloat("lg_shadow_elevation", 6f))
+    val liquidGlassShadowElevation: StateFlow<Float> = _liquidGlassShadowElevation.asStateFlow()
+
+    private val _liquidGlassAnimationIntensity = MutableStateFlow(prefs.getFloat("lg_anim_intensity", 1.0f))
+    val liquidGlassAnimationIntensity: StateFlow<Float> = _liquidGlassAnimationIntensity.asStateFlow()
+
+    private val _liquidGlassPerformanceMode = MutableStateFlow(prefs.getString("lg_perf_mode", "Quality") ?: "Quality")
+    val liquidGlassPerformanceMode: StateFlow<String> = _liquidGlassPerformanceMode.asStateFlow()
+
+    // Subscribe Button Customization
+    private val _subscribeGlassEnabled = MutableStateFlow(prefs.getBoolean("sub_glass_enabled", true))
+    val subscribeGlassEnabled: StateFlow<Boolean> = _subscribeGlassEnabled.asStateFlow()
+
+    private val _subscribeGlassTintHex = MutableStateFlow(prefs.getLong("sub_glass_tint_hex", 0xFFFFFFFFL))
+    val subscribeGlassTintHex: StateFlow<Long> = _subscribeGlassTintHex.asStateFlow()
+
+    private val _subscribeTransparency = MutableStateFlow(prefs.getFloat("sub_transparency", 0.85f))
+    val subscribeTransparency: StateFlow<Float> = _subscribeTransparency.asStateFlow()
+
+    private val _subscribeCornerRadius = MutableStateFlow(prefs.getFloat("sub_corner_radius", 18f))
+    val subscribeCornerRadius: StateFlow<Float> = _subscribeCornerRadius.asStateFlow()
+
+    private val _subscribeDepth = MutableStateFlow(prefs.getBoolean("sub_depth", true))
+    val subscribeDepth: StateFlow<Boolean> = _subscribeDepth.asStateFlow()
+
+    private val _subscribeRefraction = MutableStateFlow(prefs.getFloat("sub_refraction", 0.65f))
+    val subscribeRefraction: StateFlow<Float> = _subscribeRefraction.asStateFlow()
+
+    private val _subscribeEdgeHighlight = MutableStateFlow(prefs.getFloat("sub_edge_highlight", 0.75f))
+    val subscribeEdgeHighlight: StateFlow<Float> = _subscribeEdgeHighlight.asStateFlow()
+
     // Neon Lights system
     private val _neonLightsMaster = MutableStateFlow(prefs.getBoolean("neon_master_enabled", false))
     val neonLightsMaster: StateFlow<Boolean> = _neonLightsMaster.asStateFlow()
@@ -481,6 +536,122 @@ class SettingsManager(context: Context) {
     fun setLiquidGlassBorderThickness(v: Float) {
         _liquidGlassBorderThickness.value = v
         prefs.edit().putFloat("lg_border_thickness", v).apply()
+    }
+
+    fun setLiquidGlassCornerRadius(v: Float) {
+        _liquidGlassCornerRadius.value = v
+        prefs.edit().putFloat("lg_corner_radius", v).apply()
+    }
+
+    fun setLiquidGlassRefractionHeight(v: Float) {
+        _liquidGlassRefractionHeight.value = v
+        prefs.edit().putFloat("lg_refraction_height", v).apply()
+    }
+
+    fun setLiquidGlassLayerRefraction(v: Boolean) {
+        _liquidGlassLayerRefraction.value = v
+        prefs.edit().putBoolean("lg_layer_refraction", v).apply()
+    }
+
+    fun setLiquidGlassDepthEnabled(v: Boolean) {
+        _liquidGlassDepthEnabled.value = v
+        prefs.edit().putBoolean("lg_depth_enabled", v).apply()
+    }
+
+    fun setLiquidGlassVibrancy(v: Float) {
+        _liquidGlassVibrancy.value = v
+        prefs.edit().putFloat("lg_vibrancy", v).apply()
+    }
+
+    fun setLiquidGlassEdgeHighlights(v: Float) {
+        _liquidGlassEdgeHighlights.value = v
+        prefs.edit().putFloat("lg_edge_highlights", v).apply()
+    }
+
+    fun setLiquidGlassReflection(v: Float) {
+        _liquidGlassReflection.value = v
+        prefs.edit().putFloat("lg_reflection", v).apply()
+    }
+
+    fun setLiquidGlassTintColorHex(colorLong: Long) {
+        _liquidGlassTintColorHex.value = colorLong
+        prefs.edit().putLong("lg_tint_color_hex", colorLong).apply()
+    }
+
+    fun setLiquidGlassShadowElevation(v: Float) {
+        _liquidGlassShadowElevation.value = v
+        prefs.edit().putFloat("lg_shadow_elevation", v).apply()
+    }
+
+    fun setLiquidGlassAnimationIntensity(v: Float) {
+        _liquidGlassAnimationIntensity.value = v
+        prefs.edit().putFloat("lg_anim_intensity", v).apply()
+    }
+
+    fun setLiquidGlassPerformanceMode(mode: String) {
+        _liquidGlassPerformanceMode.value = mode
+        prefs.edit().putString("lg_perf_mode", mode).apply()
+    }
+
+    fun setSubscribeGlassEnabled(v: Boolean) {
+        _subscribeGlassEnabled.value = v
+        prefs.edit().putBoolean("sub_glass_enabled", v).apply()
+    }
+
+    fun setSubscribeGlassTintHex(v: Long) {
+        _subscribeGlassTintHex.value = v
+        prefs.edit().putLong("sub_glass_tint_hex", v).apply()
+    }
+
+    fun setSubscribeTransparency(v: Float) {
+        _subscribeTransparency.value = v
+        prefs.edit().putFloat("sub_transparency", v).apply()
+    }
+
+    fun setSubscribeCornerRadius(v: Float) {
+        _subscribeCornerRadius.value = v
+        prefs.edit().putFloat("sub_corner_radius", v).apply()
+    }
+
+    fun setSubscribeDepth(v: Boolean) {
+        _subscribeDepth.value = v
+        prefs.edit().putBoolean("sub_depth", v).apply()
+    }
+
+    fun setSubscribeRefraction(v: Float) {
+        _subscribeRefraction.value = v
+        prefs.edit().putFloat("sub_refraction", v).apply()
+    }
+
+    fun setSubscribeEdgeHighlight(v: Float) {
+        _subscribeEdgeHighlight.value = v
+        prefs.edit().putFloat("sub_edge_highlight", v).apply()
+    }
+
+    fun resetLiquidGlassDefaults() {
+        setLiquidGlassMaster(true)
+        setLiquidGlassTransparency(0.70f)
+        setLiquidGlassBlur(24f)
+        setLiquidGlassCornerRadius(16f)
+        setLiquidGlassRefractionHeight(0.65f)
+        setLiquidGlassRefraction(0.65f)
+        setLiquidGlassLayerRefraction(true)
+        setLiquidGlassDepthEnabled(true)
+        setLiquidGlassVibrancy(0.85f)
+        setLiquidGlassEdgeHighlights(0.80f)
+        setLiquidGlassBorderThickness(1.0f)
+        setLiquidGlassReflection(0.75f)
+        setLiquidGlassTintColorHex(0x35141928L)
+        setLiquidGlassShadowElevation(6f)
+        setLiquidGlassAnimationIntensity(1.0f)
+        setLiquidGlassPerformanceMode("Quality")
+        setSubscribeGlassEnabled(true)
+        setSubscribeGlassTintHex(0xFFFFFFFFL)
+        setSubscribeTransparency(0.85f)
+        setSubscribeCornerRadius(18f)
+        setSubscribeDepth(true)
+        setSubscribeRefraction(0.65f)
+        setSubscribeEdgeHighlight(0.75f)
     }
 
     fun setNeonLightsMaster(enabled: Boolean) {

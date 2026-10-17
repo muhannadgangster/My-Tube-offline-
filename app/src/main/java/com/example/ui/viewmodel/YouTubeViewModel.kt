@@ -420,17 +420,33 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
                 )
             }
             _editingVideo.value = null
+            NotificationHelper.showNotification(
+                context = getApplication(),
+                notificationId = 2004,
+                title = "MyTube — Custom title updated",
+                message = "New title saved: \"${newTitle.trim()}\"",
+                videoId = video.id
+            )
         }
     }
 
     fun toggleLike(video: VideoItem) {
         viewModelScope.launch {
             repository.toggleLike(video.id)
+            val wasLiked = video.isLiked
             if (_currentlyPlaying.value?.id == video.id) {
-                val wasLiked = _currentlyPlaying.value?.isLiked ?: false
                 _currentlyPlaying.value = _currentlyPlaying.value?.copy(
                     isLiked = !wasLiked,
                     isDisliked = false
+                )
+            }
+            if (!wasLiked) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 2005,
+                    title = "MyTube — Added to Liked Videos",
+                    message = "\"${video.displayTitle}\" has been saved to your Liked list.",
+                    videoId = video.id
                 )
             }
         }
@@ -452,9 +468,18 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
     fun toggleSubscribe(video: VideoItem) {
         viewModelScope.launch {
             repository.toggleSubscription(video.id)
+            val wasSubscribed = video.isSubscribed
             if (_currentlyPlaying.value?.id == video.id) {
-                val wasSubscribed = _currentlyPlaying.value?.isSubscribed ?: false
                 _currentlyPlaying.value = _currentlyPlaying.value?.copy(isSubscribed = !wasSubscribed)
+            }
+            if (!wasSubscribed) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 2001,
+                    title = "MyTube — Subscribed",
+                    message = "Subscribed to @${video.displayChannelName}. You'll see their latest offline clips.",
+                    videoId = video.id
+                )
             }
         }
     }
@@ -462,9 +487,18 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
     fun toggleWatchLater(video: VideoItem) {
         viewModelScope.launch {
             repository.toggleWatchLater(video.id)
+            val wasWL = video.isWatchLater
             if (_currentlyPlaying.value?.id == video.id) {
-                val wasWL = _currentlyPlaying.value?.isWatchLater ?: false
                 _currentlyPlaying.value = _currentlyPlaying.value?.copy(isWatchLater = !wasWL)
+            }
+            if (!wasWL) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 2002,
+                    title = "MyTube — Watch Later",
+                    message = "\"${video.displayTitle}\" added to Watch Later list.",
+                    videoId = video.id
+                )
             }
         }
     }
@@ -472,9 +506,18 @@ class YouTubeViewModel(application: Application) : AndroidViewModel(application)
     fun toggleDownloaded(video: VideoItem) {
         viewModelScope.launch {
             repository.toggleDownloaded(video.id)
+            val wasDl = video.isDownloaded
             if (_currentlyPlaying.value?.id == video.id) {
-                val wasDl = _currentlyPlaying.value?.isDownloaded ?: false
                 _currentlyPlaying.value = _currentlyPlaying.value?.copy(isDownloaded = !wasDl)
+            }
+            if (!wasDl) {
+                NotificationHelper.showNotification(
+                    context = getApplication(),
+                    notificationId = 2003,
+                    title = "MyTube — Video Saved Offline",
+                    message = "\"${video.displayTitle}\" is now saved for offline playback.",
+                    videoId = video.id
+                )
             }
         }
     }

@@ -98,14 +98,44 @@ object LiquidPhysics {
 
 /**
  * Full-app Liquid Glass & Neon styling configuration state
+ * Contains all real, adjustable, persistent parameters required by the Global Liquid Glass system.
  */
 @Immutable
 data class LiquidGlassStyleConfig(
     val isEnabled: Boolean = true,
-    val glassIntensity: Float = 0.85f, // 0.0f .. 1.0f
-    val blurRadius: Float = 24f, // 0..50
-    val transparency: Float = 0.70f, // 0.2 .. 0.95
-    val refractionIntensity: Float = 0.65f, // 0.0 .. 1.0 (edge lens dispersion)
+    // Transparency / Opacity (0.1 .. 0.95)
+    val transparency: Float = 0.70f,
+    // Blur Radius (0 .. 50). If 0, blur is completely off.
+    val blurRadius: Float = 24f,
+    // Corner Radius (0 .. 32 dp)
+    val cornerRadiusDp: Float = 16f,
+    // Refraction Height (0.0 .. 1.0)
+    val refractionHeight: Float = 0.65f,
+    // Refraction Amount / Intensity (0.0 .. 1.0). If 0, refraction stops.
+    val refractionAmount: Float = 0.65f,
+    // Layer Refraction / Layer Separation (dual-layer optical separation)
+    val layerRefraction: Boolean = true,
+    // Enable Depth (if false, 3D elevation and depth gradients are removed)
+    val depthEnabled: Boolean = true,
+    // Vibrancy / Saturation (0.0 .. 1.0)
+    val vibrancy: Float = 0.85f,
+    // Edge Highlights (0.0 .. 1.0). If 0, bevel sheen and rim highlight are removed.
+    val edgeHighlights: Float = 0.80f,
+    // Glass Thickness / Bevel border width in dp (0.5 .. 3.5 dp)
+    val glassThickness: Float = 1.0f,
+    // Reflection Intensity (0.0 .. 1.0). Controls surface reflection and video light spill.
+    val reflectionIntensity: Float = 0.75f,
+    // Glass Tint & Color (ARGB Hex). Default neutral smoke crystal.
+    val glassTintColorHex: Long = 0x35141928L,
+    // Shadow / Elevation (0 .. 16 dp).
+    val shadowElevationDp: Float = 6f,
+    // Animation Intensity (0.0 .. 1.0)
+    val animationIntensity: Float = 1.0f,
+    // Glass Quality / Performance Mode: "Quality", "Balanced", "Battery Saver"
+    val performanceMode: String = "Quality",
+    // Compatibility helpers
+    val glassIntensity: Float = 0.85f,
+    val refractionIntensity: Float = 0.65f,
     val specularHighlight: Boolean = true,
     val borderThicknessDp: Float = 1.0f,
     val isDarkGlass: Boolean = true,
@@ -117,20 +147,27 @@ data class LiquidGlassStyleConfig(
     val springPhysicsEnabled: Boolean = true,
     // Neon Lights
     val neonEnabled: Boolean = false,
-    val neonColorHex: Long = 0xFF00E5FFL, // Electric Cyan default
+    val neonColorHex: Long = 0xFF00E5FFL,
     val neonIntensity: Float = 0.85f,
     val neonAnimated: Boolean = false,
-    val neonAnimationSpeed: Float = 1.0f
+    val neonAnimationSpeed: Float = 1.0f,
+    // Subscribe Button Customization
+    val subscribeGlassEnabled: Boolean = true,
+    val subscribeGlassTintHex: Long = 0xFFFFFFFFL,
+    val subscribeTransparency: Float = 0.85f,
+    val subscribeCornerRadius: Float = 18f,
+    val subscribeDepth: Boolean = true,
+    val subscribeRefraction: Float = 0.65f,
+    val subscribeEdgeHighlight: Float = 0.75f
 )
 
 val LocalLiquidGlassConfig = staticCompositionLocalOf { LiquidGlassStyleConfig() }
 
 /**
  * Dimensional, physically-inspired iOS optical glass surface modifier:
- * - Dimensional layering (surface depth, curved bevel, optical reflection)
- * - Beveled specular edge reflections & luminous top-left rim
- * - Multi-stop gradient simulating refractive internal caustic dispersion
- * - Cohesive Neon edge illumination bloom if Neon is enabled
+ * - Every single parameter genuinely affects visual rendering in real time
+ * - Respects master switch (bypasses completely when disabled)
+ * - Supports depth, edge highlights, blur, refraction height/amount, layer separation, reflection, and custom tint
  */
 fun Modifier.liquidGlassSurface(
     shape: Shape,
@@ -139,20 +176,52 @@ fun Modifier.liquidGlassSurface(
     elevation: Dp = 6.dp,
     interactiveGlow: Boolean = false
 ): Modifier {
+    // 1. MASTER SWITCH: When disabled and neon is not active, return unmodified
     if (!config.isEnabled && !config.neonEnabled) {
         return this
     }
 
     val isDark = config.isDarkGlass
 
-    // 1. Transparent optical glass material - background content remains sharp & visible through glass
-    val baseGlassColor = if (isDark) {
-        Color(0x35141928) // Translucent neutral glass (~21% tint)
+    // 2. TRANSPARENCY & TINT: Base translucent glass material
+    // Alpha is directly computed from transparency: higher transparency -> lower opacity
+    val baseAlpha = ((1f - config.transparency.coerceIn(0.1f, 0.95f)) * 0.85f).coerceIn(0.08f, 0.92f)
+    val customTintColor = Color(config.glassTintColorHex)
+    val baseGlassColor = if (config.glassTintColorHex != 0x35141928L && customTintColor.alpha > 0.01f) {
+        customTintColor.copy(alpha = baseAlpha)
+    } else if (isDark) {
+        Color(0xFF141928).copy(alpha = baseAlpha)
     } else {
-        Color(0x55FFFFFF) // Translucent pearl glass
+        Color(0xFFFFFFFF).copy(alpha = baseAlpha)
     }
 
-    val shadowElevation = if (config.isEnabled) elevation.coerceAtMost(8.dp) else 0.dp
+    // 3. DEPTH & SHADOW: If depth is disabled, shadow elevation is strictly 0
+    val effectiveElevationDp = if (config.isEnabled && config.depthEnabled) {
+        (config.shadowElevationDp.takeIf { it > 0f } ?: elevation.value).coerceIn(0f, 16f)
+    } else 0f
+
+    val shadowElevation = effectiveElevationDp.dp
+
+    // 4. BORDER THICKNESS / BEVEL
+    val effectiveBorderWidth = if (config.neonEnabled) {
+        1.2.dp
+    } else {
+        config.glassThickness.coerceIn(0.5f, 3.5f).dp
+    }
+
+    // 5. BLUR / FROSTED DISPERSION (RenderEffect on Android 12+ or subtle backdrop diffusion)
+    val blurEffectModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && config.blurRadius > 0.5f && config.performanceMode != "Battery Saver") {
+        Modifier.graphicsLayer {
+            try {
+                val blurPx = config.blurRadius.coerceIn(1f, 50f)
+                renderEffect = AndroidRenderEffect.createBlurEffect(
+                    blurPx,
+                    blurPx,
+                    Shader.TileMode.CLAMP
+                ).asComposeRenderEffect()
+            } catch (_: Exception) {}
+        }
+    } else Modifier
 
     return this
         .then(
@@ -161,61 +230,126 @@ fun Modifier.liquidGlassSurface(
                     elevation = shadowElevation,
                     shape = shape,
                     clip = false,
-                    ambientColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x22000000),
-                    spotColor = if (config.neonEnabled) Color(config.neonColorHex) else Color(0x38000000)
+                    ambientColor = if (config.neonEnabled) Color(config.neonColorHex).copy(alpha = 0.35f) else Color(0x28000000),
+                    spotColor = if (config.neonEnabled) Color(config.neonColorHex).copy(alpha = 0.45f) else Color(0x40000000)
                 )
             } else Modifier
         )
         .clip(shape)
+        .then(blurEffectModifier)
         .drawBehind {
-            // 1. Base translucent glass material
+            // A. Base translucent glass material
             drawRect(color = baseGlassColor)
 
-            if (config.isEnabled && config.specularHighlight) {
-                // 2. Optical specular sheen (Apple iOS Liquid Glass style) across top quadrant
-                val specularBrush = Brush.linearGradient(
+            // B. DEPTH GRADIENT: Layered depth illumination (only if depthEnabled is true)
+            if (config.isEnabled && config.depthEnabled) {
+                val depthBrush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = (0.22f * config.refractionIntensity).coerceIn(0.06f, 0.35f)),
-                        Color.White.copy(alpha = (0.05f * config.refractionIntensity).coerceIn(0.01f, 0.12f)),
+                        Color.White.copy(alpha = 0.07f * config.vibrancy),
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.18f * (1f - config.transparency))
+                    )
+                )
+                drawRect(brush = depthBrush)
+            }
+
+            // C. REFRACTION & CAUSTIC BAND: Lens distortion along top quadrant
+            if (config.isEnabled && config.refractionAmount > 0.05f) {
+                val causticHeightFactor = (0.20f + 0.50f * config.refractionHeight).coerceIn(0.20f, 0.75f)
+                val causticBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF80D8FF).copy(alpha = (0.12f * config.refractionAmount * config.vibrancy).coerceIn(0.01f, 0.25f)),
+                        Color.White.copy(alpha = (0.16f * config.refractionAmount).coerceIn(0.02f, 0.30f)),
+                        Color(0xFFEA80FC).copy(alpha = (0.08f * config.refractionAmount * config.vibrancy).coerceIn(0.01f, 0.18f)),
                         Color.Transparent
                     ),
                     start = Offset(0f, 0f),
-                    end = Offset(size.width * 0.70f, size.height * 0.50f)
+                    end = Offset(size.width * 0.85f, size.height * causticHeightFactor)
                 )
                 drawRect(
-                    brush = specularBrush,
-                    size = Size(size.width, size.height * 0.60f)
+                    brush = causticBrush,
+                    size = Size(size.width, size.height * causticHeightFactor)
                 )
+            }
 
-                // 3. Subtle luminous bevel line along top rim
+            // D. EDGE HIGHLIGHTS & SPECULAR BEVEL (only if edgeHighlights > 0)
+            if (config.isEnabled && config.edgeHighlights > 0.05f) {
+                val highlightAlpha = (0.45f * config.edgeHighlights).coerceIn(0.05f, 0.65f)
+                // 1. Subtle luminous bevel line along top rim
                 drawLine(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.White.copy(alpha = (0.40f * config.refractionIntensity).coerceIn(0.10f, 0.55f)),
+                            Color.White.copy(alpha = highlightAlpha),
                             Color.Transparent
                         )
                     ),
-                    start = Offset(size.width * 0.08f, 1f),
-                    end = Offset(size.width * 0.92f, 1f),
-                    strokeWidth = 0.8.dp.toPx()
+                    start = Offset(size.width * 0.06f, 1f),
+                    end = Offset(size.width * 0.94f, 1f),
+                    strokeWidth = (config.glassThickness * 0.9f).coerceIn(0.6f, 2.5f).dp.toPx()
+                )
+
+                // 2. Corner specular flare
+                val specularBrush = Brush.radialGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.28f * config.edgeHighlights),
+                        Color.Transparent
+                    ),
+                    center = Offset(size.width * 0.12f, size.height * 0.12f),
+                    radius = (size.width.coerceAtLeast(size.height)) * 0.35f
+                )
+                drawRect(brush = specularBrush)
+            }
+
+            // E. LAYER REFRACTION / LAYER SEPARATION (secondary inner offset glass contour)
+            if (config.isEnabled && config.layerRefraction && size.width > 20f && size.height > 20f) {
+                val innerOffsetPx = 2.dp.toPx()
+                drawRoundRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.14f * config.refractionAmount),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.08f)
+                        ),
+                        start = Offset(innerOffsetPx, innerOffsetPx),
+                        end = Offset(size.width - innerOffsetPx, size.height - innerOffsetPx)
+                    ),
+                    topLeft = Offset(innerOffsetPx, innerOffsetPx),
+                    size = Size(size.width - innerOffsetPx * 2, size.height - innerOffsetPx * 2),
+                    style = Stroke(width = 0.75.dp.toPx())
                 )
             }
 
-            // 4. Optional neon edge ambient glow (only if user explicitly activated Neon Lights)
+            // F. REFLECTION INTENSITY (Diagonal light sheen across entire surface)
+            if (config.isEnabled && config.reflectionIntensity > 0.05f) {
+                val sheenAlpha = (0.16f * config.reflectionIntensity).coerceIn(0.02f, 0.35f)
+                val reflectionBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = sheenAlpha),
+                        Color.Transparent,
+                        Color.White.copy(alpha = sheenAlpha * 0.5f),
+                        Color.Transparent
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+                drawRect(brush = reflectionBrush)
+            }
+
+            // G. NEON EDGE AMBIENT GLOW (if neonEnabled)
             if (config.neonEnabled) {
-                val neonGlowColor = Color(config.neonColorHex).copy(alpha = 0.18f * config.neonIntensity)
+                val neonGlowColor = Color(config.neonColorHex).copy(alpha = 0.22f * config.neonIntensity)
                 drawRect(
                     brush = Brush.radialGradient(
                         colors = listOf(neonGlowColor, Color.Transparent),
                         center = Offset(size.width / 2f, size.height / 2f),
-                        radius = (size.width.coerceAtLeast(size.height)) * 0.85f
+                        radius = (size.width.coerceAtLeast(size.height)) * 0.90f
                     )
                 )
             }
         }
         .border(
-            width = if (config.neonEnabled) 1.dp else 0.75.dp,
+            width = effectiveBorderWidth,
             brush = if (config.neonEnabled) {
                 Brush.sweepGradient(
                     listOf(
@@ -225,24 +359,26 @@ fun Modifier.liquidGlassSurface(
                         Color(config.neonColorHex)
                     )
                 )
-            } else {
-                // Refined optical crystal glass bevel reflection: fine white specular highlight on top fading to crystal rim
+            } else if (config.isEnabled && config.edgeHighlights > 0f) {
+                // Beveled specular edge border
                 Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.32f),
-                        Color.White.copy(alpha = 0.08f),
-                        Color.Black.copy(alpha = 0.25f)
+                        Color.White.copy(alpha = (0.38f * config.edgeHighlights).coerceIn(0.1f, 0.6f)),
+                        Color.White.copy(alpha = (0.12f * config.edgeHighlights).coerceIn(0.03f, 0.25f)),
+                        Color.Black.copy(alpha = 0.20f)
                     ),
                     start = Offset(0f, 0f),
                     end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                 )
+            } else {
+                Brush.solidColor(Color.White.copy(alpha = 0.15f))
             },
             shape = shape
         )
 }
 
 /**
- * Modifier for buttons, chips, and small controls with animated specular or neon glow
+ * Modifier for interactive buttons, chips, and small controls with animated specular sheen
  */
 @Composable
 fun Modifier.liquidGlassInteractive(
@@ -251,13 +387,14 @@ fun Modifier.liquidGlassInteractive(
     accentColor: Color = LocalAppAccentColor.current,
     elevation: Dp = 4.dp
 ): Modifier {
+    val animFactor = config.animationIntensity.coerceAtLeast(0.1f)
     val infiniteTransition = rememberInfiniteTransition(label = "glass_sheen")
     val sweepOffset by infiniteTransition.animateFloat(
         initialValue = -100f,
         targetValue = 600f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = (4000 / config.neonAnimationSpeed.coerceAtLeast(0.5f)).toInt(),
+                durationMillis = (4000 / animFactor).toInt().coerceAtLeast(1000),
                 easing = LinearEasing
             ),
             repeatMode = RepeatMode.Restart
@@ -276,7 +413,7 @@ fun Modifier.liquidGlassInteractive(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color(config.neonColorHex).copy(alpha = 0.25f * pulseAlpha),
+                                Color(config.neonColorHex).copy(alpha = 0.25f * pulseAlpha * config.animationIntensity),
                                 Color.Transparent
                             ),
                             startX = sweepOffset - 120f,

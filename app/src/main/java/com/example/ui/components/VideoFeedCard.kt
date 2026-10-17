@@ -146,8 +146,8 @@ fun VideoFeedCard(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
+        GlassVideoReflection(height = 8.dp)
+        Spacer(modifier = Modifier.height(2.dp))
 
         // Details Row: Avatar + Title + Metadata + 3-dots
         Row(
@@ -249,7 +249,7 @@ fun VideoFeedCard(
                 }
             }
 
-            // 3-dots Options Menu
+            // 3-dots Options Menu (Liquid Glass Video Action Sheet)
             Box {
                 IconButton(
                     onClick = { showMenu = true },
@@ -265,75 +265,15 @@ fun VideoFeedCard(
                     )
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(YtSurfaceDark)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Set Custom Title", color = YtTextPrimary) },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Edit, contentDescription = null, tint = YtTextPrimary)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onEditTitleClick()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (video.isWatchLater) "Remove from Watch Later" else "Save to Watch Later",
-                                color = YtTextPrimary
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.WatchLater, contentDescription = null, tint = YtTextPrimary)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onToggleWatchLater()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (video.isSubscribed) "Unsubscribe Channel" else "Subscribe / Favorite Channel",
-                                color = YtTextPrimary
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.BookmarkAdd, contentDescription = null, tint = YtTextPrimary)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onToggleSubscribe()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (video.isDownloaded) "Remove Download" else "Save / Download Offline",
-                                color = YtTextPrimary
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Download, contentDescription = null, tint = YtTextPrimary)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onToggleDownload()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Share Video", color = YtTextPrimary) },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Share, contentDescription = null, tint = YtTextPrimary)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onShareClick()
-                        }
+                if (showMenu) {
+                    GlassVideoActionSheet(
+                        video = video,
+                        onDismiss = { showMenu = false },
+                        onToggleWatchLater = onToggleWatchLater,
+                        onToggleDownload = onToggleDownload,
+                        onToggleSubscribe = onToggleSubscribe,
+                        onShare = onShareClick,
+                        onEditTitle = onEditTitleClick
                     )
                 }
             }

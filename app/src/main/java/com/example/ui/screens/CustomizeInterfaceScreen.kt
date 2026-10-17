@@ -128,6 +128,15 @@ import com.example.ui.theme.YtSurfaceVariant
 import com.example.ui.theme.YtTextPrimary
 import com.example.ui.theme.YtTextSecondary
 import com.example.ui.theme.liquidGlassSurface
+import com.example.ui.components.LiquidGlassSubscribeButton
+import com.example.ui.components.GlassSurface
+import com.example.ui.components.GlassButton
+import com.example.ui.components.GlassVideoReflection
+import com.example.ui.components.GlassSlider
+import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Speed
 import com.example.util.IconCatalog
 import java.util.UUID
 
@@ -217,6 +226,33 @@ fun CustomizeInterfaceScreen(
     val springPhysicsEnabled by settingsManager.springPhysicsEnabled.collectAsStateWithLifecycle()
     val playerControlsSize by settingsManager.playerControlsSize.collectAsStateWithLifecycle()
 
+    val lgTransparency by settingsManager.liquidGlassTransparency.collectAsStateWithLifecycle()
+    val lgBlur by settingsManager.liquidGlassBlur.collectAsStateWithLifecycle()
+    val lgCornerRadius by settingsManager.liquidGlassCornerRadius.collectAsStateWithLifecycle()
+    val lgRefractionHeight by settingsManager.liquidGlassRefractionHeight.collectAsStateWithLifecycle()
+    val lgRefraction by settingsManager.liquidGlassRefraction.collectAsStateWithLifecycle()
+    val lgLayerRefraction by settingsManager.liquidGlassLayerRefraction.collectAsStateWithLifecycle()
+    val lgDepthEnabled by settingsManager.liquidGlassDepthEnabled.collectAsStateWithLifecycle()
+    val lgVibrancy by settingsManager.liquidGlassVibrancy.collectAsStateWithLifecycle()
+    val lgEdgeHighlights by settingsManager.liquidGlassEdgeHighlights.collectAsStateWithLifecycle()
+    val lgBorderThickness by settingsManager.liquidGlassBorderThickness.collectAsStateWithLifecycle()
+    val lgReflection by settingsManager.liquidGlassReflection.collectAsStateWithLifecycle()
+    val lgTintColorHex by settingsManager.liquidGlassTintColorHex.collectAsStateWithLifecycle()
+    val lgShadowElevation by settingsManager.liquidGlassShadowElevation.collectAsStateWithLifecycle()
+    val lgAnimIntensity by settingsManager.liquidGlassAnimationIntensity.collectAsStateWithLifecycle()
+    val lgPerfMode by settingsManager.liquidGlassPerformanceMode.collectAsStateWithLifecycle()
+
+    val subGlassEnabled by settingsManager.subscribeGlassEnabled.collectAsStateWithLifecycle()
+    val subGlassTintHex by settingsManager.subscribeGlassTintHex.collectAsStateWithLifecycle()
+    val subTransparency by settingsManager.subscribeTransparency.collectAsStateWithLifecycle()
+    val subCornerRadius by settingsManager.subscribeCornerRadius.collectAsStateWithLifecycle()
+    val subDepth by settingsManager.subscribeDepth.collectAsStateWithLifecycle()
+    val subRefraction by settingsManager.subscribeRefraction.collectAsStateWithLifecycle()
+    val subEdgeHighlight by settingsManager.subscribeEdgeHighlight.collectAsStateWithLifecycle()
+
+    var isGlassAdvancedMode by remember { mutableStateOf(false) }
+    var previewIsSubscribed by remember { mutableStateOf(false) }
+
     // If currently rendering a custom page editor
     if (editingPageId != null || isCreatingPage) {
         CustomPageEditorScreen(
@@ -252,6 +288,7 @@ fun CustomizeInterfaceScreen(
 
     val categories = listOf(
         "🛠️ Interface Builder",
+        "💎 Liquid Glass",
         "🏠 Home Feed",
         "⚡ Shorts",
         "🧭 Navigation",
@@ -546,6 +583,13 @@ fun CustomizeInterfaceScreen(
                                     .padding(horizontal = 16.dp, vertical = 6.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                DashboardActionRow(
+                                    icon = Icons.Default.Diamond,
+                                    title = "Liquid Glass Settings",
+                                    subtitle = "Transparency, blur, refraction, depth, bevels & reflection studio",
+                                    badge = if (lgMaster) "Active ✨" else "Off",
+                                    onClick = { activeBuilderSection = "Liquid Glass" }
+                                )
                                 DashboardActionRow(
                                     icon = Icons.Default.ViewAgenda,
                                     title = "Edit Application Layout",

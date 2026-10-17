@@ -53,10 +53,20 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.example.ui.components.LiquidGlassSubscribeButton
+import com.example.ui.components.GlassVideoActionSheet
+import com.example.ui.components.GlassIconButton
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -118,6 +128,11 @@ fun ShortsScreen(
     onRemixClick: (VideoItem) -> Unit = {},
     onEditTitle: (VideoItem) -> Unit,
     onShare: (VideoItem) -> Unit,
+    onSearchClick: (() -> Unit)? = null,
+    onCameraClick: (() -> Unit)? = null,
+    onNotificationsClick: (() -> Unit)? = null,
+    unreadNotificationCount: Int = 0,
+    onToggleDownload: ((VideoItem) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (shortsList.isEmpty()) {
@@ -131,6 +146,9 @@ fun ShortsScreen(
         }
         return
     }
+
+    val glassConfig = LocalLiquidGlassConfig.current
+    var activeSheetVideo by remember { mutableStateOf<VideoItem?>(null) }
 
     val initialPage = remember(initialShortId) {
         if (!initialShortId.isNullOrBlank()) {
@@ -158,29 +176,161 @@ fun ShortsScreen(
         }
     }
 
-    VerticalPager(
-        state = pagerState,
-        key = { page -> "short_page_${page}_${shortsList[page % shortsList.size].id}" },
+    val currentVideo = shortsList[pagerState.currentPage % shortsList.size]
+
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .testTag("shorts_vertical_pager")
-    ) { page ->
-        val video = shortsList[page % shortsList.size]
-        val isCurrentPage = pagerState.currentPage == page
+    ) {
+        VerticalPager(
+            state = pagerState,
+            key = { page -> "short_page_${page}_${shortsList[page % shortsList.size].id}" },
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("shorts_vertical_pager")
+        ) { page ->
+            val video = shortsList[page % shortsList.size]
+            val isCurrentPage = pagerState.currentPage == page
 
-        ShortsItemPage(
-            video = video,
-            pageIndex = page,
-            isActive = isCurrentPage,
-            onToggleLike = { onToggleLike(video) },
-            onToggleSubscribe = { onToggleSubscribe(video) },
-            onOpenComments = { onOpenComments(video) },
-            onToggleSave = { onToggleSave(video) },
-            onRemixClick = { onRemixClick(video) },
-            onEditTitle = { onEditTitle(video) },
-            onShare = { onShare(video) }
-        )
+            ShortsItemPage(
+                video = video,
+                pageIndex = page,
+                isActive = isCurrentPage,
+                onToggleLike = { onToggleLike(video) },
+                onToggleSubscribe = { onToggleSubscribe(video) },
+                onOpenComments = { onOpenComments(video) },
+                onToggleSave = { onToggleSave(video) },
+                onRemixClick = { onRemixClick(video) },
+                onEditTitle = { onEditTitle(video) },
+                onShare = { onShare(video) },
+                onOpenMenu = { activeSheetVideo = video }
+            )
+        }
+
+        // Top Floating Liquid Glass Action Bar (Reference layout: Search + 3 action icons)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .align(Alignment.TopCenter),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left: Shorts Title with subtle glass pill
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .then(
+                        if (glassConfig.isEnabled) {
+                            Modifier.liquidGlassSurface(
+                                shape = RoundedCornerShape(14.dp),
+                                config = glassConfig,
+                                elevation = 3.dp
+                            )
+                        } else {
+                            Modifier.background(Color(0x66000000))
+                        }
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Shorts",
+                        tint = YtRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Shorts",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Right: Search icon + 3 Action Icons: 1. Camera, 2. Notifications, 3. More
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Search icon
+                if (onSearchClick != null) {
+                    GlassIconButton(
+                        onClick = onSearchClick,
+                        icon = Icons.Default.Search,
+                        contentDescription = "Search",
+                        size = 38.dp,
+                        iconSize = 20.dp,
+                        testTag = "shorts_top_search"
+                    )
+                }
+
+                // 1. Camera / Create
+                if (onCameraClick != null) {
+                    GlassIconButton(
+                        onClick = onCameraClick,
+                        icon = Icons.Default.CameraAlt,
+                        contentDescription = "Create Shorts",
+                        size = 38.dp,
+                        iconSize = 20.dp,
+                        testTag = "shorts_top_camera"
+                    )
+                }
+
+                // 2. Notifications with Dynamic Unread Badge
+                if (onNotificationsClick != null) {
+                    Box {
+                        GlassIconButton(
+                            onClick = onNotificationsClick,
+                            icon = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            size = 38.dp,
+                            iconSize = 20.dp,
+                            testTag = "shorts_top_notifications"
+                        )
+                        if (unreadNotificationCount > 0) {
+                            Badge(
+                                containerColor = YtRed,
+                                contentColor = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(16.dp)
+                            ) {
+                                val text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString()
+                                Text(text, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // 3. More options (opens GlassVideoActionSheet)
+                GlassIconButton(
+                    onClick = { activeSheetVideo = currentVideo },
+                    icon = Icons.Default.MoreVert,
+                    contentDescription = "More",
+                    size = 38.dp,
+                    iconSize = 20.dp,
+                    testTag = "shorts_top_more"
+                )
+            }
+        }
+
+        // Dedicated Liquid Glass Video Action Sheet for Shorts
+        if (activeSheetVideo != null) {
+            GlassVideoActionSheet(
+                video = activeSheetVideo!!,
+                onDismiss = { activeSheetVideo = null },
+                onToggleWatchLater = { onToggleSave(activeSheetVideo!!) },
+                onToggleDownload = { onToggleDownload?.invoke(activeSheetVideo!!) },
+                onToggleSubscribe = { onToggleSubscribe(activeSheetVideo!!) },
+                onShare = { onShare(activeSheetVideo!!) },
+                onEditTitle = { onEditTitle(activeSheetVideo!!) }
+            )
+        }
     }
 }
 
@@ -195,7 +345,8 @@ private fun ShortsItemPage(
     onToggleSave: () -> Unit,
     onRemixClick: () -> Unit,
     onEditTitle: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    onOpenMenu: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isPlaying by remember { mutableStateOf(true) }
@@ -502,23 +653,12 @@ private fun ShortsItemPage(
 
                 Spacer(modifier = Modifier.width(8.dp.scaled()))
 
-                // White capsule Subscribe pill button
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (video.isSubscribed) Color(0x44FFFFFF) else Color.White)
-                        .clickable { onToggleSubscribe() }
-                        .padding(horizontal = 10.dp.scaled(), vertical = 4.dp.scaled())
-                        .testTag("shorts_subscribe_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (video.isSubscribed) "Subscribed" else "Subscribe",
-                        color = if (video.isSubscribed) Color.White else Color.Black,
-                        fontSize = 11.sp.scaled(),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // Customizable Liquid Glass Subscribe Pill button
+                LiquidGlassSubscribeButton(
+                    isSubscribed = video.isSubscribed,
+                    onToggleSubscribe = onToggleSubscribe,
+                    testTag = "shorts_subscribe_button"
+                )
             }
 
             Spacer(modifier = Modifier.height(3.dp.scaled()))
@@ -657,7 +797,16 @@ private fun ShortsItemPage(
                 onClick = onRemixClick
             )
 
-            // 6. Audio / Sound Thumbnail Card at the very bottom right
+            // 6. Three-dots More Action Button
+            ShortsActionButton(
+                icon = Icons.Default.MoreVert,
+                label = "More",
+                tint = Color.White,
+                testTag = "shorts_more_button",
+                onClick = onOpenMenu
+            )
+
+            // 7. Audio / Sound Thumbnail Card at the very bottom right
             Box(
                 modifier = Modifier
                     .size(32.dp.scaled())

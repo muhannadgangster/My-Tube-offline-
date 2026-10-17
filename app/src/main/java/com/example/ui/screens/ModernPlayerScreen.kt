@@ -88,6 +88,9 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import com.example.ui.components.LiquidGlassSubscribeButton
+import com.example.ui.components.GlassVideoReflection
+import com.example.ui.components.GlassVideoActionSheet
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -669,7 +672,18 @@ fun ModernPlayerScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
-                                    .clip(CircleShape)
+                                    .then(
+                                        if (glassConfig.isEnabled) {
+                                            Modifier.liquidGlassSurface(
+                                                shape = CircleShape,
+                                                config = glassConfig,
+                                                accentColor = Color.White,
+                                                elevation = 4.dp
+                                            )
+                                        } else {
+                                            Modifier.clip(CircleShape).background(Color(0x55000000))
+                                        }
+                                    )
                                     .clickable {
                                         val newPos = (currentPositionMs - 60000).coerceAtLeast(0L)
                                         currentPositionMs = newPos
@@ -696,9 +710,21 @@ fun ModernPlayerScreen(
                             // Center: Play / Pause (▶ / ❚❚)
                             Box(
                                 modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0x99000000))
+                                    .size(68.dp)
+                                    .then(
+                                        if (glassConfig.isEnabled) {
+                                            Modifier.liquidGlassSurface(
+                                                shape = CircleShape,
+                                                config = glassConfig,
+                                                accentColor = accentColor,
+                                                elevation = 8.dp
+                                            )
+                                        } else {
+                                            Modifier
+                                                .clip(CircleShape)
+                                                .background(Color(0x99000000))
+                                        }
+                                    )
                                     .clickable {
                                         isPlaying = !isPlaying
                                         if (isPlaying) {
@@ -722,7 +748,18 @@ fun ModernPlayerScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
-                                    .clip(CircleShape)
+                                    .then(
+                                        if (glassConfig.isEnabled) {
+                                            Modifier.liquidGlassSurface(
+                                                shape = CircleShape,
+                                                config = glassConfig,
+                                                accentColor = Color.White,
+                                                elevation = 4.dp
+                                            )
+                                        } else {
+                                            Modifier.clip(CircleShape).background(Color(0x55000000))
+                                        }
+                                    )
                                     .clickable {
                                         val newPos = (currentPositionMs + 60000).coerceAtMost(totalDurationMs)
                                         currentPositionMs = newPos
@@ -871,9 +908,21 @@ fun ModernPlayerScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(0.94f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF1E1E1E))
-                            .border(1.dp, Color(0xFF383838), RoundedCornerShape(16.dp))
+                            .then(
+                                if (glassConfig.isEnabled) {
+                                    Modifier.liquidGlassSurface(
+                                        shape = RoundedCornerShape(18.dp),
+                                        config = glassConfig,
+                                        accentColor = accentColor,
+                                        elevation = 12.dp
+                                    )
+                                } else {
+                                    Modifier
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Color(0xFF1E1E1E))
+                                        .border(1.dp, Color(0xFF383838), RoundedCornerShape(18.dp))
+                                }
+                            )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -996,6 +1045,9 @@ fun ModernPlayerScreen(
         }
         }
 
+        // Subtle Ambient Video Light Spill & Reflection
+        GlassVideoReflection(height = 18.dp)
+
         // When fullscreen, don't show the bottom scroll content
         if (!isFullscreen) {
             LazyColumn(
@@ -1102,39 +1154,12 @@ fun ModernPlayerScreen(
                             )
                         }
 
-                        // Subscribe Pill (Screenshot 2 style)
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(if (video.isSubscribed) YtSurfaceVariant else accentColor)
-                                .clickable { onToggleSubscribe() }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                                .testTag("player_subscribe_button"),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (video.isSubscribed) {
-                                Icon(
-                                    imageVector = Icons.Default.NotificationsActive,
-                                    contentDescription = null,
-                                    tint = YtTextPrimary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Subscribed",
-                                    color = YtTextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                Text(
-                                    text = "Subscribe",
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                        // Customizable Liquid Glass Subscribe Button
+                        LiquidGlassSubscribeButton(
+                            isSubscribed = video.isSubscribed,
+                            onToggleSubscribe = onToggleSubscribe,
+                            testTag = "player_subscribe_button"
+                        )
                     }
                 }
 
